@@ -1,6 +1,6 @@
 # react-native-transformer-input
 
-Text input allowing sync transformation of text
+TextInput component that allows transforming text synchronously with a worklet
 
 ## Installation
 

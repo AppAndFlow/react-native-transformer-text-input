@@ -79,13 +79,15 @@
     "react": "19.2.0",
     "react-native": "0.83.0",
     "react-native-builder-bob": "^0.40.17",
+    "react-native-worklets": "^0.7.1",
     "release-it": "^19.0.4",
     "turbo": "^2.5.6",
     "typescript": "^5.9.2"
   },
   "peerDependencies": {
     "react": "*",
-    "react-native": "*"
+    "react-native": "*",
+    "react-native-worklets": "*"
   },
   "workspaces": [
     "example"
@@ -110,15 +112,18 @@
     ]
   },
   "codegenConfig": {
-    "name": "TransformerInputViewSpec",
+    "name": "TransformerTextInputDecoratorViewSpec",
     "type": "all",
     "jsSrcsDir": "src",
     "android": {
-      "javaPackageName": "com.transformerinput"
+      "javaPackageName": "com.appandflow.transformertextinput"
     },
     "ios": {
+      "modulesProvider": {
+        "TransformerTextInputModule": "TransformerTextInputModule"
+      },
       "componentProvider": {
-        "TransformerInputView": "TransformerInputView"
+        "TransformerTextInputDecoratorView": "TransformerTextInputDecoratorView"
       }
     }
   },
@@ -126,7 +131,7 @@
     "quoteProps": "consistent",
     "singleQuote": true,
     "tabWidth": 2,
-    "trailingComma": "es5",
+    "trailingComma": "all",
     "useTabs": false
   },
   "jest": {

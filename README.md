@@ -14,7 +14,13 @@ npm install react-native-transformer-text-input
 
 
 ```tsx
-import { TransformerTextInput } from "react-native-transformer-text-input";
+import { TransformerTextInput, Transformer } from "react-native-transformer-text-input";
+
+const transformer = new Transformer(({ value }) => {
+  'worklet';
+
+  return formatPhoneNumber(value);
+});
 
 // ...
 
@@ -31,11 +37,7 @@ const handleSubmit = () => {
 return (
   <TransformerTextInput
     ref={phoneNumberTextInputRef}
-    transformer={(newValue) => {
-      'worklet';
-
-      return formatPhoneNumber(newValue);
-    }}
+    transformer={transformer}
     defaultValue={user.phoneNumber}
     // Supports most `TextInput` props
     autoCorrect={false}

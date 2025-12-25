@@ -79,6 +79,10 @@ Create a transformer by passing a worklet function:
 - Prefer creating `Transformer` instances at module scope to avoid recreating worklets on every render.
 - This library supports the New Architecture only.
 
+## AI Disclosure
+
+Code in this repository is thought through and mostly written by humans, with AI used to improve clarity, consistency, and implementation details.
+
 ## Acknowledgments
 
 - [react-native-live-markdown](https://github.com/Expensify/react-native-live-markdown) for an example of how to extend TextInput.

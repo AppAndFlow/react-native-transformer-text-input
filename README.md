@@ -77,6 +77,7 @@ Create a transformer by passing a worklet function:
 
 - The transformer must be a worklet; the `Transformer` constructor will throw if it isn't.
 - Prefer creating `Transformer` instances at module scope to avoid recreating worklets on every render.
+- This library supports the New Architecture only.
 
 ## Acknowledgments
 

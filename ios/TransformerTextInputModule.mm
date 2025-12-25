@@ -4,12 +4,7 @@
 #import <jsi/jsi.h>
 #import <rnworklets/worklets/apple/WorkletsModule.h>
 
-static facebook::jsi::Runtime *s_uiRuntime = nullptr;
-
-facebook::jsi::Runtime *TransformerTextInputGetUIRuntime(void)
-{
-  return s_uiRuntime;
-}
+#import "TransformerTextInputRuntime.h"
 
 @implementation TransformerTextInputModule
 
@@ -19,9 +14,9 @@ RCT_EXPORT_MODULE(TransformerTextInputModule)
 
 - (NSNumber *)install
 {
-  WorkletsModule* workletsModule = [_moduleRegistry moduleForName:"WorkletsModule"];
-  auto &uiRuntime = [workletsModule getWorkletsModuleProxy]->getUIWorkletRuntime()->getJSIRuntime();
-  s_uiRuntime = &uiRuntime;
+  WorkletsModule *workletsModule = [_moduleRegistry moduleForName:"WorkletsModule"];
+  auto uiRuntime = [workletsModule getWorkletsModuleProxy]->getUIWorkletRuntime();
+  rntti::SetUIWorkletRuntime(uiRuntime);
   return @YES;
 }
 

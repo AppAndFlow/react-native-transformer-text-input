@@ -33,7 +33,7 @@ type TransformerWrapper = (
   input: string,
   selectionStart: number,
   selectionEnd: number,
-) => { value: string; selection: Selection };
+) => { value: string | null; selection: Selection | null };
 
 type ReactNativeTextInputTransformerRegistry = {
   register(id: number, transformer: TransformerWrapper): void;
@@ -42,7 +42,7 @@ type ReactNativeTextInputTransformerRegistry = {
 };
 
 declare global {
-  var __rnti_registerTransformerRegistry:
+  var __rntti_registerTransformerRegistry:
     | ReactNativeTextInputTransformerRegistry
     | undefined;
 }
@@ -64,7 +64,7 @@ function initializeIfNeeded() {
 
     const transformersMap = new Map<number, TransformerWrapper>();
 
-    globalThis.__rnti_registerTransformerRegistry = {
+    globalThis.__rntti_registerTransformerRegistry = {
       register(id, transformer) {
         transformersMap.set(id, transformer);
       },
@@ -110,28 +110,28 @@ function registerTransformer(transformer: Transformer): number {
           end: selectionEnd,
         },
       });
-      const newValue = result?.value ?? value;
-      const newSelection = result?.selection ?? {
-        start: selectionStart,
-        end: selectionEnd,
-      };
-      if (newSelection.start < 0 || newSelection.end < 0) {
-        throw new Error(
-          `[rnti] Returned selection must be non-negative. Received start=${newSelection.start}, end=${newSelection.end}, valueLength=${newValue.length}`,
-        );
-      }
-      if (newSelection.end < newSelection.start) {
-        throw new Error(
-          `[rnti] Returned selection end must be >= selection start. Received start=${newSelection.start}, end=${newSelection.end}, valueLength=${newValue.length}`,
-        );
-      }
-      if (
-        newSelection.start > newValue.length ||
-        newSelection.end > newValue.length
-      ) {
-        throw new Error(
-          `[rnti] Returned selection is out of bounds for the returned value. Received start=${newSelection.start}, end=${newSelection.end}, valueLength=${newValue.length}`,
-        );
+      const newValue = result?.value ?? null;
+      const newSelection = result?.selection ?? null;
+      if (newSelection) {
+        const currentValue = newValue ?? value;
+        if (newSelection.start < 0 || newSelection.end < 0) {
+          throw new Error(
+            `[rntti] Returned selection must be non-negative. Received start=${newSelection.start}, end=${newSelection.end}, valueLength=${currentValue.length}`,
+          );
+        }
+        if (newSelection.end < newSelection.start) {
+          throw new Error(
+            `[rntti] Returned selection end must be >= selection start. Received start=${newSelection.start}, end=${newSelection.end}, valueLength=${currentValue.length}`,
+          );
+        }
+        if (
+          newSelection.start > currentValue.length ||
+          newSelection.end > currentValue.length
+        ) {
+          throw new Error(
+            `[rntti] Returned selection is out of bounds for the returned value. Received start=${newSelection.start}, end=${newSelection.end}, valueLength=${currentValue.length}`,
+          );
+        }
       }
       previousValue = newValue;
       previousSelection = newSelection;
@@ -141,7 +141,7 @@ function registerTransformer(transformer: Transformer): number {
       };
     };
 
-    globalThis.__rnti_registerTransformerRegistry?.register(
+    globalThis.__rntti_registerTransformerRegistry?.register(
       id,
       transformerWrapper,
     );
@@ -154,7 +154,7 @@ function unregisterTransformer(transformerId: number) {
   runOnUI(() => {
     'worklet';
 
-    global.__rnti_registerTransformerRegistry?.unregister(transformerId);
+    global.__rntti_registerTransformerRegistry?.unregister(transformerId);
   })();
 }
 
@@ -167,7 +167,7 @@ export const TransformerTextInput = forwardRef(
       .__workletHash;
     if (workletHash == null) {
       throw new Error(
-        '[rnti] Prop `transformer` must be a worklet. Did you forget to add the "worklet" directive?',
+        '[rntti] Prop `transformer` must be a worklet. Did you forget to add the "worklet" directive?',
       );
     }
 
@@ -188,7 +188,7 @@ export const TransformerTextInput = forwardRef(
         return textRef.current;
       },
       set value(_newValue: string) {
-        throw new Error('[rnti] Setting value directly is not supported.');
+        throw new Error('[rntti] Setting value directly is not supported.');
       },
     }));
 

@@ -3,13 +3,12 @@
 #import <React/RCTBackedTextInputDelegate.h>
 #import <React/RCTBackedTextInputViewProtocol.h>
 #import <React/RCTTextInputComponentView.h>
+#import <React/RCTConversions.h>
 #import <react/renderer/components/TransformerTextInputDecoratorViewSpec/EventEmitters.h>
 #import <react/renderer/components/TransformerTextInputDecoratorViewSpec/Props.h>
 #import <react/renderer/components/TransformerTextInputDecoratorViewSpec/RCTComponentViewHelpers.h>
-#import <rnworklets/worklets/apple/WorkletsModule.h>
-
 #import "TransformerTextInputDecoratorViewComponentDescriptor.h"
-#import "TransformerTextInputModule.h"
+#import "TransformerTextInputRuntime.h"
 
 using namespace facebook::react;
 
@@ -47,12 +46,7 @@ using namespace facebook::react;
   const auto &newViewProps = *std::static_pointer_cast<TransformerTextInputDecoratorViewProps const>(props);
 
   if (oldViewProps.transformerId != newViewProps.transformerId) {
-    auto &uiRuntime = *TransformerTextInputGetUIRuntime();
-    auto transformerRegistry = uiRuntime.global().getPropertyAsObject(uiRuntime, "__rnti_registerTransformerRegistry");
-    auto transformerRegistryGet = transformerRegistry.getPropertyAsFunction(uiRuntime, "get");
-    auto transformer =
-        transformerRegistryGet.call(uiRuntime, jsi::Value(newViewProps.transformerId)).asObject(uiRuntime);
-    _transformer = jsi::WeakObject(uiRuntime, transformer);
+    _transformer = rntti::LookupTransformer(newViewProps.transformerId);
   }
 
   [super updateProps:props oldProps:oldProps];
@@ -93,23 +87,6 @@ using namespace facebook::react;
   if (range) {
     [_backedTextInput setSelectedTextRange:range notifyDelegate:NO];
   }
-}
-
-- (std::optional<jsi::Function>)transformerFunction
-{
-  // Make sure transformer is valid.
-  if (!_transformer) {
-    return std::nullopt;
-  }
-  auto &uiRuntime = *TransformerTextInputGetUIRuntime();
-  auto transformer = _transformer->lock(uiRuntime);
-  if (transformer.isUndefined()) {
-    // Transformer got GC'd.
-    _transformer = std::nullopt;
-    return std::nullopt;
-  }
-
-  return transformer.asObject(uiRuntime).asFunction(uiRuntime);
 }
 
 - (void)didAddSubview:(UIView *)subview
@@ -166,31 +143,32 @@ using namespace facebook::react;
   // Current values
   NSString *currentValue = _backedTextInput.attributedText.string;
   NSRange currentSelection = [self currentSelection];
-
-  auto transformerFunction = [self transformerFunction];
-  if (transformerFunction) {
-    auto &uiRuntime = *TransformerTextInputGetUIRuntime();
-    auto result = transformerFunction
-                      ->call(
-                          uiRuntime,
-                          jsi::String::createFromUtf8(uiRuntime, currentValue.UTF8String),
-                          jsi::Value(static_cast<int>(currentSelection.location)),
-                          jsi::Value(static_cast<int>(currentSelection.location + currentSelection.length)))
-                      .asObject(uiRuntime);
-
-    NSString *newValue =
-        [NSString stringWithCString:result.getProperty(uiRuntime, "value").asString(uiRuntime).utf8(uiRuntime).c_str()
-                           encoding:NSUTF8StringEncoding];
-    auto selectionObject = result.getProperty(uiRuntime, "selection").asObject(uiRuntime);
-    NSInteger newStart = (NSInteger)selectionObject.getProperty(uiRuntime, "start").asNumber();
-    NSInteger newEnd = (NSInteger)selectionObject.getProperty(uiRuntime, "end").asNumber();
-    NSRange newSelection = NSMakeRange(newStart, newEnd - newStart);
-
+  rntti::SelectionRange selectionRange{
+      static_cast<int>(currentSelection.location),
+      static_cast<int>(currentSelection.location + currentSelection.length)};
+  auto transformResult = rntti::RunTransformer(
+      _transformer,
+      RCTStringFromNSString(currentValue),
+      selectionRange);
+  if (transformResult) {
+    NSString *transformedValue = transformResult->value
+    ? RCTNSStringFromString(*transformResult->value)
+    : nil;
+    NSString *newValue = transformedValue ?: currentValue;
+    NSRange newSelection;
+    if (transformResult->selection) {
+      newSelection = NSMakeRange(
+                                 transformResult->selection->start,
+                                 transformResult->selection->end - transformResult->selection->start);
+    } else {
+      newSelection = currentSelection;
+    }
+    
     bool didTransform = ![newValue isEqualToString:currentValue];
     if (didTransform) {
       [self applyValue:newValue];
     }
-    if (didTransform || !NSEqualRanges(newSelection, currentSelection)) {
+    if (transformResult->selection && (didTransform || !NSEqualRanges(newSelection, currentSelection))) {
       [self applySelection:newSelection];
     }
   }

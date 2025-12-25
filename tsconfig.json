@@ -2,7 +2,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "react-native-transformer-input": ["./src/index"]
+      "react-native-transformer-text-input": ["./src/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

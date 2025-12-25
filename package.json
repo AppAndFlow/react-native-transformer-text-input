@@ -1,5 +1,5 @@
 {
-  "name": "react-native-transformer-input",
+  "name": "react-native-transformer-text-input",
   "version": "0.1.0",
   "description": "TextInput component that allows transforming text synchronously with a worklet",
   "main": "./lib/module/index.js",
@@ -32,7 +32,7 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace react-native-transformer-input-example",
+    "example": "yarn workspace react-native-transformer-text-input-example",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
     "prepare": "bob build",
     "typecheck": "tsc",
@@ -47,14 +47,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AppAndFlow/react-native-transformer-input.git"
+    "url": "git+https://github.com/AppAndFlow/react-native-transformer-text-input.git"
   },
   "author": "Janic Duplessis <janicduplessis@gmail.com> (https://appandflow.com)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/AppAndFlow/react-native-transformer-input/issues"
+    "url": "https://github.com/AppAndFlow/react-native-transformer-text-input/issues"
   },
-  "homepage": "https://github.com/AppAndFlow/react-native-transformer-input#readme",
+  "homepage": "https://github.com/AppAndFlow/react-native-transformer-text-input#readme",
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
   },

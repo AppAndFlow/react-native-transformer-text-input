@@ -46,7 +46,7 @@ class JTransformerTextInputJni
     }
     auto &rt = *s_uiRuntime;
     auto registry =
-        rt.global().getPropertyAsObject(rt, "__rnti_registerTransformerRegistry");
+        rt.global().getPropertyAsObject(rt, "__rntti_registerTransformerRegistry");
     auto getFn = registry.getPropertyAsFunction(rt, "get");
     auto transformerValue = getFn.call(rt, jsi::Value(transformerId));
     if (!transformerValue.isObject()) {

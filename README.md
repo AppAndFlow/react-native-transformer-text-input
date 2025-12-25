@@ -1,4 +1,4 @@
-# react-native-transformer-input
+# react-native-transformer-text-input
 
 TextInput component that allows transforming text synchronously with a worklet
 
@@ -6,7 +6,7 @@ TextInput component that allows transforming text synchronously with a worklet
 
 
 ```sh
-npm install react-native-transformer-input
+npm install react-native-transformer-text-input
 ```
 
 
@@ -14,7 +14,7 @@ npm install react-native-transformer-input
 
 
 ```tsx
-import { TransformerTextInput } from "react-native-transformer-input";
+import { TransformerTextInput } from "react-native-transformer-text-input";
 
 // ...
 

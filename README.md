@@ -1,20 +1,19 @@
 # react-native-transformer-text-input
 
-TextInput component that allows transforming text synchronously with a worklet
+TextInput component that allows transforming text synchronously with a worklet.
 
 ## Installation
-
-
 ```sh
 npm install react-native-transformer-text-input
 ```
 
-
 ## Usage
-
-
 ```tsx
-import { TransformerTextInput, Transformer } from "react-native-transformer-text-input";
+import {
+  Transformer,
+  TransformerTextInput,
+  type TransformerTextInputInstance,
+} from 'react-native-transformer-text-input';
 
 const transformer = new Transformer(({ value }) => {
   'worklet';
@@ -24,7 +23,7 @@ const transformer = new Transformer(({ value }) => {
 
 // ...
 
-const phoneNumberTextInputRef = useRef<TransformerTextInput>(null);
+const phoneNumberTextInputRef = useRef<TransformerTextInputInstance>(null);
 
 const handleSubmit = () => {
   const newPhoneNumber = phoneNumberTextInputRef.current?.value;
@@ -47,6 +46,41 @@ return (
 );
 ```
 
+## API
+
+### Transformer
+
+Create a transformer by passing a worklet function:
+
+- **Constructor**: `new Transformer(worklet)`
+- **worklet input**: an object with
+  - `value`: current text value.
+  - `previousValue`: previous text value (falls back to `value` on first call).
+  - `selection`: current selection `{ start, end }`.
+  - `previousSelection`: previous selection `{ start, end }` (falls back to `selection` on first call).
+- **worklet return**:
+  - Return `null` or `undefined` to apply no transform.
+  - Return an object where each field can also be `null` or `undefined` to leave that part unchanged:
+    - `value?: string | null` to update the text.
+    - `selection?: { start: number; end: number } | null` to update the selection.
+
+### TransformerTextInput
+
+`TransformerTextInput` wraps React Native `TextInput` and applies a `Transformer` on the UI thread.
+
+- **Props**: all `TextInput` props (except `value`) plus:
+  - `transformer`: a `Transformer` instance.
+- **Ref**: `TransformerTextInputInstance` with:
+  - `value: string` (current text value).
+
+## Notes
+
+- The transformer must be a worklet; the `Transformer` constructor will throw if it isn't.
+
+## Acknowledgments
+
+- [react-native-live-markdown](https://github.com/Expensify/react-native-live-markdown) for an example of how to extend TextInput.
+- [react-native-worklets](https://github.com/software-mansion/react-native-reanimated/tree/main/packages/react-native-worklets) for the worklet runtime powering UI-thread execution.
 
 ## Contributing
 

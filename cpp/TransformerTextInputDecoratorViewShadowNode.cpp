@@ -14,8 +14,7 @@ void TransformerTextInputDecoratorViewShadowNode::initialize() {
 }
 
 void TransformerTextInputDecoratorViewShadowNode::layout(
-    LayoutContext layoutContext)
-{
+    LayoutContext layoutContext) {
   ConcreteViewShadowNode::layout(layoutContext);
 }
 

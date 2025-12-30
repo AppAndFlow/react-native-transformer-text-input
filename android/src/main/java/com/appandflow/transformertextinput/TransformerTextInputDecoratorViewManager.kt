@@ -1,17 +1,15 @@
 package com.appandflow.transformertextinput
 
-import android.graphics.Color
 import com.facebook.react.module.annotations.ReactModule
-import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.ViewManagerDelegate
-import com.facebook.react.uimanager.annotations.ReactProp
-import com.facebook.react.viewmanagers.TransformerTextInputDecoratorViewManagerInterface
 import com.facebook.react.viewmanagers.TransformerTextInputDecoratorViewManagerDelegate
+import com.facebook.react.viewmanagers.TransformerTextInputDecoratorViewManagerInterface
 
 @ReactModule(name = TransformerTextInputDecoratorViewManager.NAME)
-class TransformerTextInputDecoratorViewManager : ViewGroupManager<TransformerTextInputDecoratorView>(),
+class TransformerTextInputDecoratorViewManager :
+  ViewGroupManager<TransformerTextInputDecoratorView>(),
   TransformerTextInputDecoratorViewManagerInterface<TransformerTextInputDecoratorView> {
   private val mDelegate: ViewManagerDelegate<TransformerTextInputDecoratorView>
 
@@ -19,19 +17,17 @@ class TransformerTextInputDecoratorViewManager : ViewGroupManager<TransformerTex
     mDelegate = TransformerTextInputDecoratorViewManagerDelegate(this)
   }
 
-  override fun getDelegate(): ViewManagerDelegate<TransformerTextInputDecoratorView>? {
-    return mDelegate
-  }
+  override fun getDelegate(): ViewManagerDelegate<TransformerTextInputDecoratorView>? = mDelegate
 
-  override fun getName(): String {
-    return NAME
-  }
+  override fun getName(): String = NAME
 
-  public override fun createViewInstance(context: ThemedReactContext): TransformerTextInputDecoratorView {
-    return TransformerTextInputDecoratorView(context)
-  }
+  public override fun createViewInstance(context: ThemedReactContext): TransformerTextInputDecoratorView =
+    TransformerTextInputDecoratorView(context)
 
-  override fun setTransformerId(view: TransformerTextInputDecoratorView?, transformerId: Int) {
+  override fun setTransformerId(
+    view: TransformerTextInputDecoratorView?,
+    transformerId: Int,
+  ) {
     view?.setTransformerId(transformerId)
   }
 

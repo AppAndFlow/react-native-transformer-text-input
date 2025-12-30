@@ -2,8 +2,8 @@
 
 #import <React/RCTBackedTextInputDelegate.h>
 #import <React/RCTBackedTextInputViewProtocol.h>
-#import <React/RCTTextInputComponentView.h>
 #import <React/RCTConversions.h>
+#import <React/RCTTextInputComponentView.h>
 #import <react/renderer/components/TransformerTextInputDecoratorViewSpec/EventEmitters.h>
 #import <react/renderer/components/TransformerTextInputDecoratorViewSpec/Props.h>
 #import <react/renderer/components/TransformerTextInputDecoratorViewSpec/RCTComponentViewHelpers.h>
@@ -146,24 +146,18 @@ using namespace facebook::react;
   rntti::SelectionRange selectionRange{
       static_cast<int>(currentSelection.location),
       static_cast<int>(currentSelection.location + currentSelection.length)};
-  auto transformResult = rntti::RunTransformer(
-      _transformer,
-      RCTStringFromNSString(currentValue),
-      selectionRange);
+  auto transformResult = rntti::RunTransformer(_transformer, RCTStringFromNSString(currentValue), selectionRange);
   if (transformResult) {
-    NSString *transformedValue = transformResult->value
-    ? RCTNSStringFromString(*transformResult->value)
-    : nil;
+    NSString *transformedValue = transformResult->value ? RCTNSStringFromString(*transformResult->value) : nil;
     NSString *newValue = transformedValue ?: currentValue;
     NSRange newSelection;
     if (transformResult->selection) {
       newSelection = NSMakeRange(
-                                 transformResult->selection->start,
-                                 transformResult->selection->end - transformResult->selection->start);
+          transformResult->selection->start, transformResult->selection->end - transformResult->selection->start);
     } else {
       newSelection = currentSelection;
     }
-    
+
     bool didTransform = ![newValue isEqualToString:currentValue];
     if (didTransform) {
       [self applyValue:newValue];

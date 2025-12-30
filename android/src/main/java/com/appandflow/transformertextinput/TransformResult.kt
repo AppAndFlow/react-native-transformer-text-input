@@ -7,5 +7,5 @@ data class TransformResult(
   val value: String,
   val hasSelection: Boolean,
   val selectionStart: Int,
-  val selectionEnd: Int
+  val selectionEnd: Int,
 )

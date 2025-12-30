@@ -31,9 +31,9 @@ This repository contains a React Native Fabric view + worklet-based transformer 
 - Android JNI currently has its own transformer calls; keep in sync with JS contracts.
 
 ## Common Commands
-- `yarn lint`
-- `yarn typecheck`
-- `yarn test`
+- `yarn format:write` (format code before committing)
+- `yarn lint` (run linters)
+- `yarn test` (run unit tests)
 - `yarn prepare` (builds via `bob`)
 - `yarn example` (opens example workspace commands)
 

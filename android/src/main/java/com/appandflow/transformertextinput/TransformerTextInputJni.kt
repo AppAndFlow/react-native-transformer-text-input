@@ -20,6 +20,6 @@ object TransformerTextInputJni {
     transformerId: Int,
     value: String,
     selectionStart: Int,
-    selectionEnd: Int
+    selectionEnd: Int,
   ): TransformResult?
 }

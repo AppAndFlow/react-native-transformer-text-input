@@ -15,9 +15,10 @@ struct JTransformResult : public jni::JavaClass<JTransformResult> {
   static auto constexpr kJavaDescriptor =
       "Lcom/appandflow/transformertextinput/TransformResult;";
 
-    static jni::local_ref<JTransformResult> create(std::string const& value, bool hasSelection, int start, int end) {
-        return newInstance(value, hasSelection, start, end);
-    }
+  static jni::local_ref<JTransformResult>
+  create(std::string const &value, bool hasSelection, int start, int end) {
+    return newInstance(value, hasSelection, start, end);
+  }
 };
 
 class JTransformerTextInputJni
@@ -55,31 +56,35 @@ class JTransformerTextInputJni
     }
     const auto currentValue = value->toStdString();
     rntti::SelectionRange selection{
-        static_cast<int>(selectionStart),
-        static_cast<int>(selectionEnd)};
+        static_cast<int>(selectionStart), static_cast<int>(selectionEnd)};
     auto result = rntti::RunTransformer(transformer, currentValue, selection);
     if (!result) {
       return nullptr;
     }
 
     const auto &resolvedValue = result->value ? *result->value : currentValue;
-    const auto &resolvedSelection = result->selection ? *result->selection : selection;
+    const auto &resolvedSelection =
+        result->selection ? *result->selection : selection;
 
-    return JTransformResult::create(resolvedValue, result->selection.has_value(), resolvedSelection.start, resolvedSelection.end);
+    return JTransformResult::create(
+        resolvedValue,
+        result->selection.has_value(),
+        resolvedSelection.start,
+        resolvedSelection.end);
   }
 
   static void registerNatives() {
     registerHybrid({
-        makeNativeMethod("setWorkletsModule", JTransformerTextInputJni::setWorkletsModule),
+        makeNativeMethod(
+            "setWorkletsModule", JTransformerTextInputJni::setWorkletsModule),
         makeNativeMethod("transform", JTransformerTextInputJni::transform),
     });
   }
 };
 
-} // namespace transformerinput
+} // namespace rntti
 
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
-  return facebook::jni::initialize(vm, [] {
-    rntti::JTransformerTextInputJni::registerNatives();
-  });
+  return facebook::jni::initialize(
+      vm, [] { rntti::JTransformerTextInputJni::registerNatives(); });
 }

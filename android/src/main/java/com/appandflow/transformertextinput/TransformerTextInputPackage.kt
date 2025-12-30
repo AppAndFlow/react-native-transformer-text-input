@@ -13,14 +13,18 @@ import java.util.ArrayList
 import java.util.HashMap
 
 @ReactModuleList(nativeModules = [TransformerTextInputModule::class])
-class TransformerTextInputPackage : BaseReactPackage(), ReactPackage {
-  override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
-    return if (name == TransformerTextInputModule.NAME) {
+class TransformerTextInputPackage :
+  BaseReactPackage(),
+  ReactPackage {
+  override fun getModule(
+    name: String,
+    reactContext: ReactApplicationContext,
+  ): NativeModule? =
+    if (name == TransformerTextInputModule.NAME) {
       TransformerTextInputModule(reactContext)
     } else {
       null
     }
-  }
 
   override fun getReactModuleInfoProvider(): ReactModuleInfoProvider {
     val moduleList = arrayOf(TransformerTextInputModule::class.java)
@@ -28,14 +32,14 @@ class TransformerTextInputPackage : BaseReactPackage(), ReactPackage {
     for (moduleClass in moduleList) {
       val reactModule = moduleClass.getAnnotation(ReactModule::class.java) ?: continue
       reactModuleInfoMap[reactModule.name] =
-          ReactModuleInfo(
-              reactModule.name,
-              moduleClass.name,
-              reactModule.canOverrideExistingModule,
-              reactModule.needsEagerInit,
-              reactModule.isCxxModule,
-              true
-          )
+        ReactModuleInfo(
+          reactModule.name,
+          moduleClass.name,
+          reactModule.canOverrideExistingModule,
+          reactModule.needsEagerInit,
+          reactModule.isCxxModule,
+          true,
+        )
     }
 
     return ReactModuleInfoProvider { reactModuleInfoMap }

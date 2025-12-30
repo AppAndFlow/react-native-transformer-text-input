@@ -1,3 +1,19 @@
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath "com.diffplug.spotless:spotless-plugin-gradle:6.25.0"
+  }
+}
+
+if (project == rootProject) {
+  apply from: "spotless.gradle"
+  return
+}
+
 def reactNativeArchitectures() {
   def value = project.getProperties().get("reactNativeArchitectures")
   return value ? value.split(",") : ["armeabi-v7a", "x86", "x86_64", "arm64-v8a"]
@@ -38,11 +54,17 @@ android {
 
   lintOptions {
     disable "GradleCompatible"
+    textReport true
+    textOutput 'stdout'
   }
 
   compileOptions {
     sourceCompatibility JavaVersion.VERSION_17
     targetCompatibility JavaVersion.VERSION_17
+  }
+
+  kotlinOptions {
+    allWarningsAsErrors = System.getenv("RNTTI_WARNINGS_AS_ERRORS") == "true"
   }
 }
 

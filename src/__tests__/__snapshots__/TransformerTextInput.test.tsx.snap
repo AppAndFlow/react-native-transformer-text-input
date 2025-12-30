@@ -1,0 +1,32 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`TransformerTextInput passes props to TextInput 1`] = `
+<TransformerTextInputDecoratorView
+  style={
+    {
+      "display": "contents",
+    }
+  }
+  transformerId={2}
+>
+  <TextInput
+    onChangeText={[Function]}
+    placeholder="Enter text"
+  />
+</TransformerTextInputDecoratorView>
+`;
+
+exports[`TransformerTextInput renders with a transformer 1`] = `
+<TransformerTextInputDecoratorView
+  style={
+    {
+      "display": "contents",
+    }
+  }
+  transformerId={1}
+>
+  <TextInput
+    onChangeText={[Function]}
+  />
+</TransformerTextInputDecoratorView>
+`;

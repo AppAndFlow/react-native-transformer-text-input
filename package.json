@@ -112,7 +112,7 @@
     ]
   },
   "codegenConfig": {
-    "name": "TransformerTextInputDecoratorViewSpec",
+    "name": "rntti",
     "type": "all",
     "jsSrcsDir": "src",
     "android": {

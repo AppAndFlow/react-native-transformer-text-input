@@ -4,13 +4,14 @@ import android.graphics.Color
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
+import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.ViewManagerDelegate
 import com.facebook.react.uimanager.annotations.ReactProp
 import com.facebook.react.viewmanagers.TransformerTextInputDecoratorViewManagerInterface
 import com.facebook.react.viewmanagers.TransformerTextInputDecoratorViewManagerDelegate
 
 @ReactModule(name = TransformerTextInputDecoratorViewManager.NAME)
-class TransformerTextInputDecoratorViewManager : SimpleViewManager<TransformerTextInputDecoratorView>(),
+class TransformerTextInputDecoratorViewManager : ViewGroupManager<TransformerTextInputDecoratorView>(),
   TransformerTextInputDecoratorViewManagerInterface<TransformerTextInputDecoratorView> {
   private val mDelegate: ViewManagerDelegate<TransformerTextInputDecoratorView>
 

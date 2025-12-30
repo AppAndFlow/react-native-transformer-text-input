@@ -3,13 +3,22 @@
 #include <worklets/NativeModules/WorkletsModuleProxy.h>
 #include <worklets/android/WorkletsModule.h>
 
+#include "TransformerTextInputRuntime.h"
+
 #include <memory>
 
 using namespace facebook;
 
-namespace transformerinput {
+namespace rntti {
 
-static jsi::Runtime *s_uiRuntime = nullptr;
+struct JTransformResult : public jni::JavaClass<JTransformResult> {
+  static auto constexpr kJavaDescriptor =
+      "Lcom/appandflow/transformertextinput/TransformResult;";
+
+    static jni::local_ref<JTransformResult> create(std::string const& value, bool hasSelection, int start, int end) {
+        return newInstance(value, hasSelection, start, end);
+    }
+};
 
 class JTransformerTextInputJni
     : public jni::HybridClass<JTransformerTextInputJni> {
@@ -17,15 +26,13 @@ class JTransformerTextInputJni
   static auto constexpr kJavaDescriptor =
       "Lcom/appandflow/transformertextinput/TransformerTextInputJni;";
 
-  static void setWorkletsModule(jni::alias_ref<jni::JObject> module) {
+  static void setWorkletsModule(
+      jni::alias_ref<jni::JClass> jClazz,
+      jni::alias_ref<worklets::WorkletsModule::javaobject> module) {
     if (!module) {
       return;
     }
-    auto workletsModule = worklets::WorkletsModule::fromJava(module);
-    if (!workletsModule) {
-      return;
-    }
-    auto proxy = workletsModule->getWorkletsModuleProxy();
+    auto proxy = module->cthis()->getWorkletsModuleProxy();
     if (!proxy) {
       return;
     }
@@ -33,59 +40,32 @@ class JTransformerTextInputJni
     if (!uiRuntime) {
       return;
     }
-    s_uiRuntime = &uiRuntime->getJSIRuntime();
+    rntti::SetUIWorkletRuntime(uiRuntime);
   }
 
-  static jni::local_ref<jni::JObject> transform(
+  static jni::local_ref<JTransformResult> transform(
+      jni::alias_ref<jni::JClass> jClazz,
       jint transformerId,
       jni::alias_ref<jni::JString> value,
       jint selectionStart,
       jint selectionEnd) {
-    if (!s_uiRuntime) {
+    auto transformer = rntti::LookupTransformer(transformerId);
+    if (!transformer) {
       return nullptr;
     }
-    auto &rt = *s_uiRuntime;
-    auto registry =
-        rt.global().getPropertyAsObject(rt, "__rntti_registerTransformerRegistry");
-    auto getFn = registry.getPropertyAsFunction(rt, "get");
-    auto transformerValue = getFn.call(rt, jsi::Value(transformerId));
-    if (!transformerValue.isObject()) {
-      return nullptr;
-    }
-    auto transformer = transformerValue.asObject(rt).asFunction(rt);
-    auto result = transformer.call(
-        rt,
-        jsi::String::createFromUtf8(rt, value->toStdString()),
-        jsi::Value(static_cast<int>(selectionStart)),
-        jsi::Value(static_cast<int>(selectionEnd)));
-
-    if (!result.isObject()) {
+    const auto currentValue = value->toStdString();
+    rntti::SelectionRange selection{
+        static_cast<int>(selectionStart),
+        static_cast<int>(selectionEnd)};
+    auto result = rntti::RunTransformer(transformer, currentValue, selection);
+    if (!result) {
       return nullptr;
     }
 
-    auto resultObject = result.asObject(rt);
-    auto valueProp = resultObject.getProperty(rt, "value");
-    auto selectionProp = resultObject.getProperty(rt, "selection");
-    if (!valueProp.isString() || !selectionProp.isObject()) {
-      return nullptr;
-    }
+    const auto &resolvedValue = result->value ? *result->value : currentValue;
+    const auto &resolvedSelection = result->selection ? *result->selection : selection;
 
-    auto selectionObject = selectionProp.asObject(rt);
-    auto startProp = selectionObject.getProperty(rt, "start");
-    auto endProp = selectionObject.getProperty(rt, "end");
-    if (!startProp.isNumber() || !endProp.isNumber()) {
-      return nullptr;
-    }
-
-    auto javaValue = jni::make_jstring(valueProp.asString(rt).utf8(rt));
-    jint start = static_cast<jint>(startProp.asNumber());
-    jint end = static_cast<jint>(endProp.asNumber());
-
-    auto resultClass = jni::findClassStatic(
-        "com/appandflow/transformertextinput/TransformResult");
-    auto ctor =
-        resultClass->getConstructor<jni::JString, jint, jint>();
-    return resultClass->newObject(ctor, javaValue, start, end);
+    return JTransformResult::create(resolvedValue, result->selection.has_value(), resolvedSelection.start, resolvedSelection.end);
   }
 
   static void registerNatives() {
@@ -100,6 +80,6 @@ class JTransformerTextInputJni
 
 JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *) {
   return facebook::jni::initialize(vm, [] {
-    transformerinput::JTransformerTextInputJni::registerNatives();
+    rntti::JTransformerTextInputJni::registerNatives();
   });
 }

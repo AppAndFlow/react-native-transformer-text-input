@@ -8,6 +8,8 @@ import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.module.annotations.ReactModuleList
 import com.facebook.react.module.model.ReactModuleInfo
 import com.facebook.react.module.model.ReactModuleInfoProvider
+import com.facebook.react.uimanager.ViewManager
+import java.util.ArrayList
 import java.util.HashMap
 
 @ReactModuleList(nativeModules = [TransformerTextInputModule::class])
@@ -29,13 +31,19 @@ class TransformerTextInputPackage : BaseReactPackage(), ReactPackage {
           ReactModuleInfo(
               reactModule.name,
               moduleClass.name,
-              reactModule.canOverrideExistingModule(),
-              reactModule.needsEagerInit(),
-              reactModule.isCxxModule(),
+              reactModule.canOverrideExistingModule,
+              reactModule.needsEagerInit,
+              reactModule.isCxxModule,
               true
           )
     }
 
     return ReactModuleInfoProvider { reactModuleInfoMap }
+  }
+
+  override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {
+    val viewManagers: MutableList<ViewManager<*, *>> = ArrayList()
+    viewManagers.add(TransformerTextInputDecoratorViewManager())
+    return viewManagers
   }
 }

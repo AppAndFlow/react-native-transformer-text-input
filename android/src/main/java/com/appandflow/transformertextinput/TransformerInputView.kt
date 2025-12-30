@@ -3,107 +3,93 @@ package com.appandflow.transformertextinput
 import android.content.Context
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.FrameLayout
+import androidx.lifecycle.findViewTreeLifecycleOwner
+import androidx.lifecycle.lifecycleScope
+import com.facebook.react.bridge.UiThreadUtil
+import com.facebook.react.views.textinput.ReactEditText
+import com.facebook.react.views.view.ReactViewGroup
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
-class TransformerTextInputDecoratorView : FrameLayout {
+
+class TransformerTextInputDecoratorView(context: Context) : ReactViewGroup(context), TextWatcher {
   private var transformerId: Int = 0
-  private var textInput: EditText? = null
-  private var textWatcher: TextWatcher? = null
+  private var lastEventValue: String? = null
+  private var resetLastEventValueJob: Job? = null
+  private var reactEditText: ReactEditText? = null
   private var isUpdating = false
-
-  constructor(context: Context?) : super(context)
-  constructor(context: Context?, attrs: AttributeSet?) : super(context, attrs)
-  constructor(context: Context?, attrs: AttributeSet?, defStyleAttr: Int) : super(
-    context,
-    attrs,
-    defStyleAttr
-  )
 
   fun setTransformerId(newTransformerId: Int) {
     transformerId = newTransformerId
+    lastEventValue = null
   }
 
-  override fun onViewAdded(child: View) {
-    super.onViewAdded(child)
-    maybeAttachTextInput(child)
-  }
+  override fun onAttachedToWindow() {
+    super.onAttachedToWindow()
 
-  override fun onViewRemoved(child: View) {
-    super.onViewRemoved(child)
-    if (child == textInput) {
-      detachTextInput()
+    val child = getChildAt(0)
+    if (child is ReactEditText) {
+      reactEditText = child
+      reactEditText?.addTextChangedListener(this)
     }
   }
 
-  private fun maybeAttachTextInput(root: View) {
-    if (textInput != null) {
+  override fun onDetachedFromWindow() {
+    super.onDetachedFromWindow()
+      reactEditText?.removeTextChangedListener(this)
+      reactEditText = null
+  }
+
+  override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+    // noop
+  }
+
+  override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+    // noop
+  }
+
+  override fun afterTextChanged(s: Editable?) {
+    if (isUpdating) {
       return
     }
-    val editText = findEditText(root) ?: return
-    textInput = editText
-    textWatcher = object : TextWatcher {
-      override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
-        // No-op.
-      }
 
-      override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        // No-op.
-      }
+    val editValue = s?.toString() ?: ""
 
-      override fun afterTextChanged(s: Editable?) {
-        if (isUpdating) {
-          return
-        }
-        val editValue = s?.toString() ?: ""
-        val input = textInput ?: return
-        val selectionStart = input.selectionStart.coerceAtLeast(0)
-        val selectionEnd = input.selectionEnd.coerceAtLeast(0)
-        val result = TransformerTextInputJni.transform(
-          transformerId,
-          editValue,
-          selectionStart,
-          selectionEnd
-        ) ?: return
-        val newValue = result.value
-        val newStart = result.selectionStart.coerceIn(0, newValue.length)
-        val newEnd = result.selectionEnd.coerceIn(0, newValue.length)
-        isUpdating = true
-        if (newValue != editValue) {
-          input.setText(newValue)
-        }
-        input.setSelection(newStart, newEnd)
-        isUpdating = false
-      }
+    // For some reason, text change events are dispatched multiple times with the same value, which
+    // causes issue with how we track previous values. To avoid this and match iOS behavior we ignore
+    // events in the same frame that have the same text value.
+    if (lastEventValue == editValue) {
+      return
     }
-    editText.addTextChangedListener(textWatcher)
-  }
+    lastEventValue = editValue
+    resetLastEventValueJob?.cancel()
+    resetLastEventValueJob = MainScope().launch(Dispatchers.Main) {
+      lastEventValue = null
+      resetLastEventValueJob = null
+    }
 
-  private fun detachTextInput() {
-    val watcher = textWatcher
-    val editText = textInput
-    if (watcher != null && editText != null) {
-      editText.removeTextChangedListener(watcher)
+    val input = reactEditText ?: return
+    val selectionStart = input.selectionStart.coerceAtLeast(0)
+    val selectionEnd = input.selectionEnd.coerceAtLeast(0)
+    val result = TransformerTextInputJni.transform(
+      transformerId,
+      editValue,
+      selectionStart,
+      selectionEnd
+    ) ?: return
+    val didTransform = result.value != editValue
+    isUpdating = true
+    if (didTransform) {
+      input.setText(result.value)
     }
-    textWatcher = null
-    textInput = null
-  }
-
-  private fun findEditText(view: View): EditText? {
-    if (view is EditText) {
-      return view
+    if (result.hasSelection && (didTransform || result.selectionStart != selectionStart || result.selectionEnd != selectionEnd)) {
+      input.setSelection(result.selectionStart, result.selectionEnd)
     }
-    if (view is ViewGroup) {
-      for (i in 0 until view.childCount) {
-        val result = findEditText(view.getChildAt(i))
-        if (result != null) {
-          return result
-        }
-      }
-    }
-    return null
+    isUpdating = false
   }
 }

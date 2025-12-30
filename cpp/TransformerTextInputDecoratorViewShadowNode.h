@@ -1,7 +1,7 @@
 #pragma once
 
-#include <react/renderer/components/TransformerTextInputDecoratorViewSpec/EventEmitters.h>
-#include <react/renderer/components/TransformerTextInputDecoratorViewSpec/Props.h>
+#include <react/renderer/components/rntti/EventEmitters.h>
+#include <react/renderer/components/rntti/Props.h>
 #include <react/renderer/components/view/ConcreteViewShadowNode.h>
 #include <react/renderer/core/LayoutContext.h>
 #include <react/renderer/core/ShadowNodeFamily.h>

@@ -1,5 +1,6 @@
 const path = require('path');
 const pkg = require('../package.json');
+const workletsPackage = require('../node_modules/react-native-worklets/package.json');
 
 module.exports = {
   project: {
@@ -10,12 +11,9 @@ module.exports = {
   dependencies: {
     [pkg.name]: {
       root: path.join(__dirname, '..'),
-      platforms: {
-        // Codegen script incorrectly fails without this
-        // So we explicitly specify the platforms with empty object
-        ios: {},
-        android: {},
-      },
+    },
+    [workletsPackage.name]: {
+      root: path.join(__dirname, '../node_modules/react-native-worklets'),
     },
   },
 };

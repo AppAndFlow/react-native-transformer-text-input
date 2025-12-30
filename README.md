@@ -79,6 +79,15 @@ Create a transformer by passing a worklet function:
 - Prefer creating `Transformer` instances at module scope to avoid recreating worklets on every render.
 - This library supports the New Architecture only.
 
+## Selection Control
+
+Selection control is needed because transforms can insert or remove characters, which would otherwise move the cursor unpredictably. The transformer can return a `selection` to fully control the caret/selection after a change.
+
+Default behavior when no `selection` is returned:
+- If the cursor was at the end, it stays at the end.
+- If the cursor was in the middle, it moves forward by the number of inserted/removed characters.
+- If the position is ambiguous, it falls back to the end.
+
 ## AI Disclosure
 
 Code in this repository is thought through and mostly written by humans, with AI used to improve clarity, consistency, and implementation details.

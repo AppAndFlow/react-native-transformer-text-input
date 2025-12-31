@@ -4,9 +4,9 @@
 #import <React/RCTBackedTextInputViewProtocol.h>
 #import <React/RCTConversions.h>
 #import <React/RCTTextInputComponentView.h>
-#import <react/renderer/components/TransformerTextInputDecoratorViewSpec/EventEmitters.h>
-#import <react/renderer/components/TransformerTextInputDecoratorViewSpec/Props.h>
-#import <react/renderer/components/TransformerTextInputDecoratorViewSpec/RCTComponentViewHelpers.h>
+#import <react/renderer/components/rntti/EventEmitters.h>
+#import <react/renderer/components/rntti/Props.h>
+#import <react/renderer/components/rntti/RCTComponentViewHelpers.h>
 #import "TransformerTextInputDecoratorViewComponentDescriptor.h"
 #import "TransformerTextInputRuntime.h"
 

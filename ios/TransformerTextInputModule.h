@@ -1,4 +1,4 @@
-#import <ReactCodegen/TransformerTextInputDecoratorViewSpec/TransformerTextInputDecoratorViewSpec.h>
+#import <ReactCodegen/rntti/rntti.h>
 
 NS_ASSUME_NONNULL_BEGIN
 

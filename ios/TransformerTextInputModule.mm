@@ -1,6 +1,5 @@
 #import "TransformerTextInputModule.h"
 
-#import <ReactCodegen/TransformerTextInputDecoratorViewSpecJSI.h>
 #import <jsi/jsi.h>
 #import <rnworklets/worklets/apple/WorkletsModule.h>
 

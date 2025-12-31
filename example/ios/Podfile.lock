@@ -2648,7 +2648,7 @@ DEPENDENCIES:
   - ReactCodegen (from `build/generated/ios/ReactCodegen`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - RNTransformerTextInput (from `../..`)
-  - RNWorklets (from `../node_modules/react-native-worklets`)
+  - RNWorklets (from `../../node_modules/react-native-worklets`)
   - SocketRocket (~> 0.7.1)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -2813,7 +2813,7 @@ EXTERNAL SOURCES:
   RNTransformerTextInput:
     :path: "../.."
   RNWorklets:
-    :path: "../node_modules/react-native-worklets"
+    :path: "../../node_modules/react-native-worklets"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
@@ -2894,8 +2894,8 @@ SPEC CHECKSUMS:
   ReactAppDependencyProvider: ebcf3a78dc1bcdf054c9e8d309244bade6b31568
   ReactCodegen: 11c08ff43a62009d48c71de000352e4515918801
   ReactCommon: 424cc34cf5055d69a3dcf02f3436481afb8b0f6f
-  RNTransformerTextInput: 4b38026018d754d6848bd6222d03c86cb0b3db59
-  RNWorklets: 69f7239afaf3a156f7f9549eeb0ae8d02adc095f
+  RNTransformerTextInput: e8cead59f688258a1593c83c54c999b5ddc8c900
+  RNWorklets: 0b3da02daae10c424dbe4201d63d31405fa80e2b
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 6ca93c8c13f56baeec55eb608577619b17a4d64e
 

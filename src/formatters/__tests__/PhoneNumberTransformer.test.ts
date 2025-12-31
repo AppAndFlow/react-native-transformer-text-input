@@ -81,57 +81,8 @@ describe('PhoneNumberTransformer', () => {
     });
   });
 
-  describe('stripCountryCode option', () => {
-    it('does not strip leading 1 when disabled (default)', () => {
-      const transformer = new PhoneNumberTransformer();
-      const result = transform(transformer, '1555123456');
-      // First digit "1" is kept as part of area code (10 digit limit)
-      expect(result?.value).toBe('+1 (155) 512-3456');
-    });
-
-    it('strips leading 1 when enabled', () => {
-      const transformer = new PhoneNumberTransformer({
-        stripCountryCode: true,
-      });
-      const result = transform(transformer, '15551234567');
-      expect(result?.value).toBe('+1 (555) 123-4567');
-    });
-
-    it('shows prefix when only 1 is typed with stripCountryCode enabled', () => {
-      const transformer = new PhoneNumberTransformer({
-        stripCountryCode: true,
-      });
-      const result = transform(transformer, '1', { start: 1, end: 1 }, '', {
-        start: 0,
-        end: 0,
-      });
-      expect(result?.value).toBe('+1 ');
-      expect(result?.selection).toEqual({ start: 3, end: 3 });
-    });
-
-    it('handles pre-formatted input with stripCountryCode enabled', () => {
-      const transformer = new PhoneNumberTransformer({
-        stripCountryCode: true,
-      });
-      const result = transform(transformer, '+1 (555) 123-4567');
-      expect(result?.value).toBe('+1 (555) 123-4567');
-    });
-
-    it('handles pre-formatted input with stripCountryCode disabled', () => {
-      const transformer = new PhoneNumberTransformer({
-        stripCountryCode: false,
-      });
-      // Without stripping, the "1" in "+1" is counted as a national digit
-      const result = transform(transformer, '+1 (555) 123-4567');
-      expect(result?.value).toBe('+1 (155) 512-3456');
-    });
-  });
-
-  describe.each([
-    ['stripCountryCode: true', { stripCountryCode: true }],
-    ['stripCountryCode: false', { stripCountryCode: false }],
-  ] as const)('cursor positioning (%s)', (_, options) => {
-    const transformer = new PhoneNumberTransformer(options);
+  describe('cursor positioning', () => {
+    const transformer = new PhoneNumberTransformer();
 
     it('positions cursor at end when typing at end', () => {
       const result = transform(
@@ -186,11 +137,8 @@ describe('PhoneNumberTransformer', () => {
     });
   });
 
-  describe.each([
-    ['stripCountryCode: true', { stripCountryCode: true }],
-    ['stripCountryCode: false', { stripCountryCode: false }],
-  ] as const)('selection handling (%s)', (_, options) => {
-    const transformer = new PhoneNumberTransformer(options);
+  describe('selection handling', () => {
+    const transformer = new PhoneNumberTransformer();
 
     it('maintains selection range', () => {
       const result = transform(

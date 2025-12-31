@@ -22,7 +22,9 @@ const usernameTransformer = new Transformer(({ value }) => {
   return { value: result };
 });
 
-const phoneNumberTransformer = new PhoneNumberTransformer({ debug: true });
+const phoneNumberTransformer = new PhoneNumberTransformer({
+  debug: true,
+});
 
 export default function App() {
   const usernameInputRef = useRef<TransformerTextInputInstance>(null);

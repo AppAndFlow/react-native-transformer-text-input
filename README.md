@@ -107,7 +107,6 @@ import { PhoneNumberTransformer } from 'react-native-transformer-text-input/form
 
 const phoneTransformer = new PhoneNumberTransformer({
   country: 'US',           // Only 'US' supported currently
-  stripCountryCode: false, // Strip leading country code from input (default: false)
   debug: false,            // Enable debug logging (default: false)
 });
 

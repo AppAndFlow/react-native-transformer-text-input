@@ -8,12 +8,6 @@ export type PhoneNumberTransformerOptions = {
    */
   country?: 'US';
   /**
-   * Whether to strip the leading country code digit from user input.
-   * When true, if user types "15551234567", the leading "1" is treated as the country code.
-   * @default false
-   */
-  stripCountryCode?: boolean;
-  /**
    * Enable debug logging for transformer operations.
    * @default false
    */
@@ -113,9 +107,10 @@ const formatUSPhoneNumber = (digits: string): string => {
 };
 
 export class PhoneNumberTransformer extends Transformer {
-  constructor(options: PhoneNumberTransformerOptions = {}) {
-    const { country = 'US', stripCountryCode = false, debug = false } = options;
-
+  constructor({
+    country = 'US',
+    debug = false,
+  }: PhoneNumberTransformerOptions = {}) {
     if (country !== 'US') {
       throw new Error(
         `[PhoneNumberTransformer] Country "${country}" is not supported. Only "US" is currently supported.`,
@@ -142,9 +137,7 @@ export class PhoneNumberTransformer extends Transformer {
 
       // Get national digits - strip leading "1" if enabled since we always add +1 prefix
       const nationalDigits = (
-        stripCountryCode && allDigits.startsWith('1')
-          ? allDigits.slice(1)
-          : allDigits
+        allDigits.startsWith('1') ? allDigits.slice(1) : allDigits
       ).slice(0, 10);
 
       // If no national digits left, check if user is deleting

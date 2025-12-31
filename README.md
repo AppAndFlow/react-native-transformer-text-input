@@ -9,41 +9,40 @@ npm install react-native-transformer-text-input
 
 ## Usage
 ```tsx
+import { useRef } from 'react';
 import {
   Transformer,
   TransformerTextInput,
   type TransformerTextInputInstance,
 } from 'react-native-transformer-text-input';
 
-const transformer = new Transformer(({ value }) => {
+// Transformer that formats input as a lowercase username with @ prefix
+const usernameTransformer = new Transformer(({ value }) => {
   'worklet';
 
-  return formatPhoneNumber(value);
+  const cleaned = value.replace(/[^0-9a-zA-Z]/g, '').toLowerCase();
+  return { value: cleaned ? '@' + cleaned : '' };
 });
 
-// ...
+function UsernameTextInput() {
+  const inputRef = useRef<TransformerTextInputInstance>(null);
 
-const phoneNumberTextInputRef = useRef<TransformerTextInputInstance>(null);
+  const handleSubmit = () => {
+    const username = inputRef.current?.value;
+    console.log('Submitted:', username);
+  };
 
-const handleSubmit = () => {
-  const newPhoneNumber = phoneNumberTextInputRef.current?.value;
-
-  // ...
-};
-
-// ...
-
-return (
-  <TransformerTextInput
-    ref={phoneNumberTextInputRef}
-    transformer={transformer}
-    defaultValue={user.phoneNumber}
-    // Supports most `TextInput` props
-    autoCorrect={false}
-    keyboardType="phone-pad"
-    onSubmitEditing={handleSubmit}
-  />
-);
+  return (
+    <TransformerTextInput
+      ref={inputRef}
+      transformer={usernameTransformer}
+      placeholder="@username"
+      autoCapitalize="none"
+      autoCorrect={false}
+      onSubmitEditing={handleSubmit}
+    />
+  );
+}
 ```
 
 ## API

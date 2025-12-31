@@ -7,7 +7,7 @@ exports[`TransformerTextInput passes props to TextInput 1`] = `
       "display": "contents",
     }
   }
-  transformerId={2}
+  transformerId={42}
 >
   <TextInput
     onChangeText={[Function]}
@@ -23,7 +23,7 @@ exports[`TransformerTextInput renders with a transformer 1`] = `
       "display": "contents",
     }
   }
-  transformerId={1}
+  transformerId={42}
 >
   <TextInput
     onChangeText={[Function]}

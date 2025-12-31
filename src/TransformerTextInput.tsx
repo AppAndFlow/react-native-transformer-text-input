@@ -28,7 +28,9 @@ export const TransformerTextInput = forwardRef(
     }, [transformer]);
 
     useEffect(() => {
-      return () => unregisterTransformer(transformerId);
+      return () => {
+        unregisterTransformer(transformerId);
+      };
     }, [transformerId]);
 
     const inputRef = useRef<typeof TextInput>(null);

@@ -3,9 +3,13 @@ package com.appandflow.transformertextinput
 import com.facebook.proguard.annotations.DoNotStripAny
 
 @DoNotStripAny
-data class TransformResult(
+data class TextSelection(
+  val start: Int,
+  val end: Int,
+)
+
+@DoNotStripAny
+data class TextState(
   val value: String,
-  val hasSelection: Boolean,
-  val selectionStart: Int,
-  val selectionEnd: Int,
+  val selection: TextSelection,
 )

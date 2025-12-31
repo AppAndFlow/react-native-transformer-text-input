@@ -44,8 +44,8 @@ export default function App() {
   };
 
   const handleSubmit = () => {
-    console.log('Username:', usernameInputRef.current?.value);
-    console.log('Phone number:', phoneNumberInputRef.current?.value);
+    console.log('Username:', usernameInputRef.current?.getValue());
+    console.log('Phone number:', phoneNumberInputRef.current?.getValue());
   };
 
   const handleSetExampleValues = () => {

@@ -16,7 +16,6 @@ interface NativeCommands {
     viewRef: React.ElementRef<HostComponent<NativeProps>>,
     transform: boolean,
     value: string | null,
-    hasSelection: boolean,
     selectionStart: CodegenTypes.Int32,
     selectionEnd: CodegenTypes.Int32,
   ) => void;

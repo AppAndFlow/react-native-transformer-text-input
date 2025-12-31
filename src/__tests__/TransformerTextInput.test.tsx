@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react-native';
+import { act, render } from '@testing-library/react-native';
 import React from 'react';
 import { TextInput } from 'react-native';
 import {
@@ -62,9 +62,12 @@ describe('TransformerTextInput', () => {
     );
 
     const textInput = UNSAFE_getByType(TextInput);
-    textInput.props.onChangeText('hello');
 
-    expect(ref.current?.value).toBe('hello');
+    act(() => {
+      textInput.props.onChangeText('hello');
+    });
+
+    expect(ref.current?.getValue()).toBe('hello');
     expect(onChangeText).toHaveBeenCalledWith('hello');
   });
 

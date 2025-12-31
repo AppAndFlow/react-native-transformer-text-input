@@ -13,18 +13,19 @@ import {
   type HostInstance,
   type TextInputProps,
 } from 'react-native';
-import { type Transformer } from './Transformer';
+import { type Selection, type Transformer } from './Transformer';
 import TransformerTextInputDecoratorViewNativeComponent, {
   Commands,
 } from './TransformerTextInputDecoratorViewNativeComponent';
 import { registerTransformer, unregisterTransformer } from './registry';
 import useMergeRefs from './utils/useMergeRefs';
+import { validateSelection } from './selection';
 
 type TransformerTextInputInstanceMethods = {
   /**
-   * Current text value.
+   * Get the current text value.
    */
-  readonly value: string;
+  getValue: () => string;
   /**
    * Update the value and/or selection, optionally running the transformer.
    */
@@ -82,24 +83,29 @@ export const TransformerTextInput = forwardRef(
     const setInputRef = useCallback((instance: HostInstance | null) => {
       if (instance != null) {
         Object.assign(instance, {
-          get value() {
+          getValue() {
             return textRef.current;
-          },
-          set value(_newValue: string) {
-            throw new Error('[rntti] Setting value directly is not supported.');
           },
           update({ value, selection, transform }) {
             const nativeRef = decoratorRef.current;
             if (!nativeRef) {
               return;
             }
+            let newSelection: Selection;
+            const newValue = value ?? textRef.current;
+            if (selection != null) {
+              validateSelection(selection, newValue.length);
+              newSelection = selection;
+            } else {
+              // When changing value without selection, move cursor to end.
+              newSelection = { start: newValue.length, end: newValue.length };
+            }
             Commands.update(
               nativeRef,
               transform ?? true,
               value ?? null,
-              selection != null,
-              selection?.start ?? 0,
-              selection?.end ?? 0,
+              newSelection.start,
+              newSelection.end,
             );
           },
           clear() {

@@ -11,13 +11,23 @@ using namespace facebook;
 
 namespace rntti {
 
-struct JTransformResult : public jni::JavaClass<JTransformResult> {
+struct JTextSelection : public jni::JavaClass<JTextSelection> {
   static auto constexpr kJavaDescriptor =
-      "Lcom/appandflow/transformertextinput/TransformResult;";
+      "Lcom/appandflow/transformertextinput/TextSelection;";
 
-  static jni::local_ref<JTransformResult>
-  create(std::string const &value, bool hasSelection, int start, int end) {
-    return newInstance(value, hasSelection, start, end);
+  static jni::local_ref<JTextSelection> create(int start, int end) {
+    return newInstance(start, end);
+  }
+};
+
+struct JTextState : public jni::JavaClass<JTextState> {
+  static auto constexpr kJavaDescriptor =
+      "Lcom/appandflow/transformertextinput/TextState;";
+
+  static jni::local_ref<JTextState> create(
+      std::string const &value,
+      jni::local_ref<JTextSelection> selection) {
+    return newInstance(value, selection);
   }
 };
 
@@ -44,7 +54,7 @@ class JTransformerTextInputJni
     rntti::SetUIWorkletRuntime(uiRuntime);
   }
 
-  static jni::local_ref<JTransformResult> transform(
+  static jni::local_ref<JTextState> transform(
       jni::alias_ref<jni::JClass> jClazz,
       jint transformerId,
       jni::alias_ref<jni::JString> value,
@@ -62,15 +72,9 @@ class JTransformerTextInputJni
       return nullptr;
     }
 
-    const auto &resolvedValue = result->value ? *result->value : currentValue;
-    const auto &resolvedSelection =
-        result->selection ? *result->selection : selection;
-
-    return JTransformResult::create(
-        resolvedValue,
-        result->selection.has_value(),
-        resolvedSelection.start,
-        resolvedSelection.end);
+    return JTextState::create(
+        result->value,
+        JTextSelection::create(result->selection.start, result->selection.end));
   }
 
   static void registerNatives() {

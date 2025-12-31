@@ -112,11 +112,9 @@ struct RNTTITextState {
     return state;
   }
 
-  NSString *value = transformResult->value ? RCTNSStringFromString(*transformResult->value) : state.value;
-  NSRange selection = transformResult->selection.has_value()
-      ? NSMakeRange(
-            transformResult->selection->start, transformResult->selection->end - transformResult->selection->start)
-      : state.selection;
+  NSString *value = RCTNSStringFromString(transformResult->value);
+  NSRange selection =
+      NSMakeRange(transformResult->selection.start, transformResult->selection.end - transformResult->selection.start);
 
   return RNTTITextState{value, selection};
 }
@@ -235,15 +233,13 @@ struct RNTTITextState {
 
 - (void)update:(BOOL)transform
              value:(NSString *)value
-      hasSelection:(BOOL)hasSelection
     selectionStart:(NSInteger)selectionStart
       selectionEnd:(NSInteger)selectionEnd
 {
   NSString *currentValue = [self currentValue];
   NSRange currentSelection = [self currentSelection];
   NSString *providedValue = value ?: currentValue;
-  NSRange providedSelection =
-      hasSelection ? NSMakeRange(selectionStart, selectionEnd - selectionStart) : currentSelection;
+  NSRange providedSelection = NSMakeRange(selectionStart, selectionEnd - selectionStart);
   RNTTITextState provided{providedValue, providedSelection};
   RNTTITextState next = transform ? [self transformTextState:provided] : provided;
   bool didTransformValue = ![next.value isEqualToString:currentValue];
@@ -253,7 +249,7 @@ struct RNTTITextState {
   if (didTransformValue || !NSEqualRanges(next.selection, currentSelection)) {
     [self applySelection:next.selection];
   }
-  
+
   [_baseDelegate textInputDidChange];
 }
 

@@ -15,8 +15,8 @@ struct SelectionRange {
 };
 
 struct TransformResult {
-  std::optional<std::string> value;
-  std::optional<SelectionRange> selection;
+  std::string value;
+  SelectionRange selection;
 };
 
 void SetUIWorkletRuntime(std::shared_ptr<worklets::WorkletRuntime> runtime);

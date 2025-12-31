@@ -20,6 +20,33 @@ class TransformerTextInputDecoratorView(
   private var reactEditText: ReactEditText? = null
   private var isUpdating = false
 
+  private fun currentValue(): String = reactEditText?.text?.toString() ?: ""
+
+  private fun currentSelection(): TextSelection {
+    val input = reactEditText
+    return if (input == null) {
+      TextSelection(0, 0)
+    } else {
+      TextSelection(input.selectionStart.coerceAtLeast(0), input.selectionEnd.coerceAtLeast(0))
+    }
+  }
+
+  private fun applyValue(value: String) {
+    reactEditText?.setText(value)
+  }
+
+  private fun applySelection(selection: TextSelection) {
+    reactEditText?.setSelection(selection.start, selection.end)
+  }
+
+  private fun transformTextState(state: TextState) =
+    TransformerTextInputJni.transform(
+      transformerId,
+      state.value,
+      state.selection.start,
+      state.selection.end,
+    ) ?: state
+
   fun setTransformerId(newTransformerId: Int) {
     transformerId = newTransformerId
     lastEventValue = null
@@ -80,117 +107,54 @@ class TransformerTextInputDecoratorView(
         resetLastEventValueJob = null
       }
 
-    val input = reactEditText ?: return
-    val selectionStart = input.selectionStart.coerceAtLeast(0)
-    val selectionEnd = input.selectionEnd.coerceAtLeast(0)
-    val result =
-      TransformerTextInputJni.transform(
-        transformerId,
-        editValue,
-        selectionStart,
-        selectionEnd,
-      ) ?: return
-    val didTransform = result.value != editValue
-    val newValue = result.value
-    // Mirror iOS behavior when selection isn't explicitly provided.
-    val (newSelectionStart, newSelectionEnd) =
-      if (result.hasSelection) {
-        Pair(result.selectionStart, result.selectionEnd)
-      } else {
-        computeUncontrolledSelection(editValue, newValue, selectionStart, selectionEnd)
-      }
+    val currentSelection = currentSelection()
+    val current = TextState(editValue, currentSelection)
+    val next = transformTextState(current)
+    val didTransformValue = next.value != current.value
     isUpdating = true
-    if (didTransform) {
-      input.setText(newValue)
-    }
-    if (result.hasSelection || didTransform) {
-      if (newSelectionStart != selectionStart || newSelectionEnd != selectionEnd) {
-        input.setSelection(newSelectionStart, newSelectionEnd)
+    try {
+      if (didTransformValue) {
+        applyValue(next.value)
       }
-    }
-    isUpdating = false
-  }
-
-  private fun computeUncontrolledSelection(
-    oldValue: String,
-    newValue: String,
-    selectionStart: Int,
-    selectionEnd: Int,
-  ): Pair<Int, Int> {
-    val oldLength = oldValue.length
-    val newLength = newValue.length
-    val delta = newLength - oldLength
-    val (rawStart, rawEnd) =
-      if (selectionStart == selectionEnd) {
-        if (selectionEnd >= oldLength) {
-          Pair(newLength, newLength)
-        } else {
-          val next = selectionEnd + delta
-          Pair(next, next)
-        }
-      } else {
-        Pair(selectionStart + delta, selectionEnd + delta)
+      if (
+        didTransformValue || next.selection != currentSelection
+      ) {
+        applySelection(next.selection)
       }
-
-    return if (
-      rawStart < 0 ||
-      rawEnd < 0 ||
-      rawStart > newLength ||
-      rawEnd > newLength ||
-      rawStart > rawEnd
-    ) {
-      Pair(newLength, newLength)
-    } else {
-      Pair(rawStart, rawEnd)
+    } finally {
+      isUpdating = false
     }
   }
 
   fun update(
-    value: String?,
-    selectionStart: Int?,
-    selectionEnd: Int?,
     transform: Boolean,
+    value: String?,
+    selectionStart: Int,
+    selectionEnd: Int,
   ) {
-    val input = reactEditText ?: return
-    val currentValue = input.text?.toString() ?: ""
-    val currentSelectionStart = input.selectionStart.coerceAtLeast(0)
-    val currentSelectionEnd = input.selectionEnd.coerceAtLeast(0)
-    val baseValue = value ?: currentValue
-    val baseSelectionStart = selectionStart ?: currentSelectionStart
-    val baseSelectionEnd = selectionEnd ?: currentSelectionEnd
-
-    var newValue = baseValue
-    var newSelectionStart = baseSelectionStart
-    var newSelectionEnd = baseSelectionEnd
-    var hasSelection = selectionStart != null && selectionEnd != null
-
-    if (transform) {
-      val result = TransformerTextInputJni.transform(
-        transformerId,
-        baseValue,
-        baseSelectionStart,
-        baseSelectionEnd,
-      )
-      if (result != null) {
-        newValue = result.value
-        if (result.hasSelection) {
-          newSelectionStart = result.selectionStart
-          newSelectionEnd = result.selectionEnd
-          hasSelection = true
-        }
-      }
+    if (reactEditText == null) {
+      return
     }
+    val currentValue = currentValue()
+    val currentSelection = currentSelection()
+    val providedValue = value ?: currentValue
+    val providedSelection = TextSelection(selectionStart, selectionEnd)
+    val provided = TextState(providedValue, providedSelection)
+    val next = if (transform) transformTextState(provided) else provided
 
-    val didTransform = newValue != currentValue
+    val didTransformValue = next.value != currentValue
     isUpdating = true
-    if (didTransform) {
-      input.setText(newValue)
-    }
-    if (hasSelection || transform) {
-      if (newSelectionStart != currentSelectionStart || newSelectionEnd != currentSelectionEnd) {
-        input.setSelection(newSelectionStart, newSelectionEnd)
+    try {
+      if (didTransformValue) {
+        applyValue(next.value)
       }
+      if (
+        didTransformValue || next.selection != currentSelection
+      ) {
+        applySelection(next.selection)
+      }
+    } finally {
+      isUpdating = false
     }
-    isUpdating = false
   }
 }

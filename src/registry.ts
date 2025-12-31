@@ -1,12 +1,13 @@
 import { runOnUI } from 'react-native-worklets';
 import NativeTransformerTextInputModule from './NativeTransformerTextInputModule';
 import { type Selection, type Transformer } from './Transformer';
+import { computeUncontrolledSelection, validateSelection } from './selection';
 
 type TransformerWrapper = (
   input: string,
   selectionStart: number,
   selectionEnd: number,
-) => { value: string | null; selection: Selection | null };
+) => { value: string; selection: Selection };
 
 type ReactNativeTextInputTransformerRegistry = {
   register(id: number, transformer: TransformerWrapper): void;
@@ -80,28 +81,18 @@ export function registerTransformer(transformer: Transformer): number {
           end: selectionEnd,
         },
       });
-      const newValue = result?.value ?? null;
-      const newSelection = result?.selection ?? null;
-      if (newSelection) {
-        const currentValue = newValue ?? value;
-        if (newSelection.start < 0 || newSelection.end < 0) {
-          throw new Error(
-            `[rntti] Returned selection must be non-negative. Received start=${newSelection.start}, end=${newSelection.end}, valueLength=${currentValue.length}`,
-          );
-        }
-        if (newSelection.end < newSelection.start) {
-          throw new Error(
-            `[rntti] Returned selection end must be >= selection start. Received start=${newSelection.start}, end=${newSelection.end}, valueLength=${currentValue.length}`,
-          );
-        }
-        if (
-          newSelection.start > currentValue.length ||
-          newSelection.end > currentValue.length
-        ) {
-          throw new Error(
-            `[rntti] Returned selection is out of bounds for the returned value. Received start=${newSelection.start}, end=${newSelection.end}, valueLength=${currentValue.length}`,
-          );
-        }
+      const newValue = result?.value ?? value;
+      let newSelection: Selection;
+      if (result?.selection != null) {
+        newSelection = result.selection;
+        validateSelection(newSelection, newValue.length);
+      } else {
+        newSelection = computeUncontrolledSelection(
+          value,
+          newValue,
+          selectionStart,
+          selectionEnd,
+        );
       }
       previousValue = newValue;
       previousSelection = newSelection;

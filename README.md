@@ -28,7 +28,7 @@ function UsernameTextInput() {
   const inputRef = useRef<TransformerTextInputInstance>(null);
 
   const handleSubmit = () => {
-    const username = inputRef.current?.value;
+    const username = inputRef.current?.getValue();
     console.log('Submitted:', username);
   };
 

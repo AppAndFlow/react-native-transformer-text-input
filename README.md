@@ -70,7 +70,12 @@ Create a transformer by passing a worklet function:
 - **Props**: all `TextInput` props (except `value`) plus:
   - `transformer`: a `Transformer` instance.
 - **Ref**: `TransformerTextInputInstance` with:
-  - `value: string` (current text value).
+  - `getValue(): string` - Returns the current text value.
+  - `update(options): void` - Programmatically update the input.
+    - `options.value: string` - The new text value.
+    - `options.selection?: { start: number; end: number }` - Optional cursor/selection position.
+    - `options.transform?: boolean` - Whether to run the transformer on the new value (default: `true`).
+  - `clear(): void` - Clear the input value.
 
 ## Notes
 

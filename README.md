@@ -88,6 +88,32 @@ Default behavior when no `selection` is returned:
 - If the cursor was in the middle, it moves forward by the number of inserted/removed characters.
 - If the position is ambiguous, it falls back to the end.
 
+## Built-in Transformers (Experimental)
+
+> **Warning**: Built-in transformers are experimental. Breaking changes may occur in minor versions.
+
+The library includes ready-to-use transformers for common use cases.
+
+### PhoneNumberTransformer
+
+Formats phone numbers as the user types.
+
+```tsx
+import { PhoneNumberTransformer } from 'react-native-transformer-text-input/formatters/phone-number';
+
+const phoneTransformer = new PhoneNumberTransformer({
+  country: 'US',           // Only 'US' supported currently
+  stripCountryCode: true,  // Strip leading country code from input (default: true)
+  debug: false,            // Enable debug logging (default: false)
+});
+
+// Formats as: +1 (555) 123-4567
+<TransformerTextInput
+  transformer={phoneTransformer}
+  keyboardType="phone-pad"
+/>
+```
+
 ## AI Disclosure
 
 Code in this repository is thought through and mostly written by humans, with AI used to improve clarity, consistency, and implementation details.

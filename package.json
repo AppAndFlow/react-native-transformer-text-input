@@ -10,6 +10,11 @@
       "types": "./lib/typescript/src/index.d.ts",
       "default": "./lib/module/index.js"
     },
+    "./formatters/phone-number": {
+      "source": "./src/formatters/phone-number.ts",
+      "types": "./lib/typescript/src/formatters/phone-number.d.ts",
+      "default": "./lib/module/formatters/phone-number.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

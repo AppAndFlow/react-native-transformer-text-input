@@ -1,5 +1,3 @@
-const { plugins } = require('./example/babel.config');
-
 module.exports = {
   overrides: [
     {

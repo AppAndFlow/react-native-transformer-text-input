@@ -1,7 +1,11 @@
 import { render } from '@testing-library/react-native';
 import React from 'react';
 import { TextInput } from 'react-native';
-import { Transformer, TransformerTextInput } from '../index';
+import {
+  Transformer,
+  TransformerTextInput,
+  type TransformerTextInputInstance,
+} from '../index';
 import * as registry from '../registry';
 
 jest.mock('react-native-worklets');
@@ -46,7 +50,7 @@ describe('TransformerTextInput', () => {
       'worklet';
       return { value };
     });
-    const ref = React.createRef<{ value: string }>();
+    const ref = React.createRef<TransformerTextInputInstance>();
     const onChangeText = jest.fn();
 
     const { UNSAFE_getByType } = render(

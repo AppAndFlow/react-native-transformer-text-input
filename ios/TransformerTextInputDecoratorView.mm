@@ -12,6 +12,11 @@
 
 using namespace facebook::react;
 
+struct RNTTITextState {
+  NSString *value;
+  NSRange selection;
+};
+
 @interface TransformerTextInputDecoratorView () <
     RCTTransformerTextInputDecoratorViewViewProtocol,
     RCTBackedTextInputDelegate>
@@ -74,6 +79,11 @@ using namespace facebook::react;
   return NSMakeRange(start, end - start);
 }
 
+- (NSString *)currentValue
+{
+  return _backedTextInput.attributedText.string ?: @"";
+}
+
 - (void)applySelection:(NSRange)selection
 {
   UITextPosition *startPosition = [_backedTextInput positionFromPosition:_backedTextInput.beginningOfDocument
@@ -87,6 +97,28 @@ using namespace facebook::react;
   if (range) {
     [_backedTextInput setSelectedTextRange:range notifyDelegate:NO];
   }
+}
+
+- (RNTTITextState)transformTextState:(RNTTITextState)state
+{
+  if (!_transformer) {
+    return state;
+  }
+
+  rntti::SelectionRange selectionRange{
+      static_cast<int>(state.selection.location), static_cast<int>(state.selection.location + state.selection.length)};
+  auto transformResult = rntti::RunTransformer(_transformer, RCTStringFromNSString(state.value), selectionRange);
+  if (!transformResult) {
+    return state;
+  }
+
+  NSString *value = transformResult->value ? RCTNSStringFromString(*transformResult->value) : state.value;
+  NSRange selection = transformResult->selection.has_value()
+      ? NSMakeRange(
+            transformResult->selection->start, transformResult->selection->end - transformResult->selection->start)
+      : state.selection;
+
+  return RNTTITextState{value, selection};
 }
 
 - (void)didAddSubview:(UIView *)subview
@@ -141,30 +173,16 @@ using namespace facebook::react;
 - (void)textInputDidChange
 {
   // Current values
-  NSString *currentValue = _backedTextInput.attributedText.string;
+  NSString *currentValue = [self currentValue];
   NSRange currentSelection = [self currentSelection];
-  rntti::SelectionRange selectionRange{
-      static_cast<int>(currentSelection.location),
-      static_cast<int>(currentSelection.location + currentSelection.length)};
-  auto transformResult = rntti::RunTransformer(_transformer, RCTStringFromNSString(currentValue), selectionRange);
-  if (transformResult) {
-    NSString *transformedValue = transformResult->value ? RCTNSStringFromString(*transformResult->value) : nil;
-    NSString *newValue = transformedValue ?: currentValue;
-    NSRange newSelection;
-    if (transformResult->selection) {
-      newSelection = NSMakeRange(
-          transformResult->selection->start, transformResult->selection->end - transformResult->selection->start);
-    } else {
-      newSelection = currentSelection;
-    }
-
-    bool didTransform = ![newValue isEqualToString:currentValue];
-    if (didTransform) {
-      [self applyValue:newValue];
-    }
-    if (transformResult->selection && (didTransform || !NSEqualRanges(newSelection, currentSelection))) {
-      [self applySelection:newSelection];
-    }
+  RNTTITextState current{currentValue, currentSelection};
+  RNTTITextState next = [self transformTextState:current];
+  bool didTransformValue = ![next.value isEqualToString:current.value];
+  if (didTransformValue) {
+    [self applyValue:next.value];
+  }
+  if (didTransformValue || !NSEqualRanges(next.selection, current.selection)) {
+    [self applySelection:next.selection];
   }
 
   [_baseDelegate textInputDidChange];
@@ -208,6 +226,35 @@ using namespace facebook::react;
 - (BOOL)textInputShouldSubmitOnReturn
 {
   return [_baseDelegate textInputShouldSubmitOnReturn];
+}
+
+- (void)handleCommand:(const NSString *)commandName args:(const NSArray *)args
+{
+  RCTTransformerTextInputDecoratorViewHandleCommand(self, commandName, args);
+}
+
+- (void)update:(BOOL)transform
+             value:(NSString *)value
+      hasSelection:(BOOL)hasSelection
+    selectionStart:(NSInteger)selectionStart
+      selectionEnd:(NSInteger)selectionEnd
+{
+  NSString *currentValue = [self currentValue];
+  NSRange currentSelection = [self currentSelection];
+  NSString *providedValue = value ?: currentValue;
+  NSRange providedSelection =
+      hasSelection ? NSMakeRange(selectionStart, selectionEnd - selectionStart) : currentSelection;
+  RNTTITextState provided{providedValue, providedSelection};
+  RNTTITextState next = transform ? [self transformTextState:provided] : provided;
+  bool didTransformValue = ![next.value isEqualToString:currentValue];
+  if (didTransformValue) {
+    [self applyValue:next.value];
+  }
+  if (didTransformValue || !NSEqualRanges(next.selection, currentSelection)) {
+    [self applySelection:next.selection];
+  }
+  
+  [_baseDelegate textInputDidChange];
 }
 
 @end

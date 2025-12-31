@@ -48,6 +48,23 @@ export default function App() {
     console.log('Phone number:', phoneNumberInputRef.current?.value);
   };
 
+  const handleSetExampleValues = () => {
+    usernameInputRef.current?.update({
+      value: 'sample',
+      transform: false,
+    });
+    phoneNumberInputRef.current?.update({
+      value: '15551234567',
+      selection: { start: 5, end: 7 },
+      transform: true,
+    });
+  };
+
+  const handleClearValues = () => {
+    usernameInputRef.current?.clear();
+    phoneNumberInputRef.current?.clear();
+  };
+
   return (
     <KeyboardAvoidingView style={styles.container} behavior="padding">
       <Text style={styles.title}>React Native Transformer Text Input</Text>
@@ -72,6 +89,11 @@ export default function App() {
           placeholder="+1 (555) 123-4567"
           style={styles.input}
         />
+        <View style={styles.buttonRow}>
+          <Button title="Set Example" onPress={handleSetExampleValues} />
+          <View style={styles.buttonSpacer} />
+          <Button title="Clear" onPress={handleClearValues} />
+        </View>
         <Button title="Submit" onPress={handleSubmit} disabled={!isValid} />
       </View>
     </KeyboardAvoidingView>
@@ -101,5 +123,12 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     marginBottom: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  buttonSpacer: {
+    width: 12,
   },
 });

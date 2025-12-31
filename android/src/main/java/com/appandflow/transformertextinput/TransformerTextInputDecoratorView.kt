@@ -144,4 +144,53 @@ class TransformerTextInputDecoratorView(
       Pair(rawStart, rawEnd)
     }
   }
+
+  fun update(
+    value: String?,
+    selectionStart: Int?,
+    selectionEnd: Int?,
+    transform: Boolean,
+  ) {
+    val input = reactEditText ?: return
+    val currentValue = input.text?.toString() ?: ""
+    val currentSelectionStart = input.selectionStart.coerceAtLeast(0)
+    val currentSelectionEnd = input.selectionEnd.coerceAtLeast(0)
+    val baseValue = value ?: currentValue
+    val baseSelectionStart = selectionStart ?: currentSelectionStart
+    val baseSelectionEnd = selectionEnd ?: currentSelectionEnd
+
+    var newValue = baseValue
+    var newSelectionStart = baseSelectionStart
+    var newSelectionEnd = baseSelectionEnd
+    var hasSelection = selectionStart != null && selectionEnd != null
+
+    if (transform) {
+      val result = TransformerTextInputJni.transform(
+        transformerId,
+        baseValue,
+        baseSelectionStart,
+        baseSelectionEnd,
+      )
+      if (result != null) {
+        newValue = result.value
+        if (result.hasSelection) {
+          newSelectionStart = result.selectionStart
+          newSelectionEnd = result.selectionEnd
+          hasSelection = true
+        }
+      }
+    }
+
+    val didTransform = newValue != currentValue
+    isUpdating = true
+    if (didTransform) {
+      input.setText(newValue)
+    }
+    if (hasSelection || transform) {
+      if (newSelectionStart != currentSelectionStart || newSelectionEnd != currentSelectionEnd) {
+        input.setSelection(newSelectionStart, newSelectionEnd)
+      }
+    }
+    isUpdating = false
+  }
 }

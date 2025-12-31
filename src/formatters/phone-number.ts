@@ -10,7 +10,7 @@ export type PhoneNumberTransformerOptions = {
   /**
    * Whether to strip the leading country code digit from user input.
    * When true, if user types "15551234567", the leading "1" is treated as the country code.
-   * @default true
+   * @default false
    */
   stripCountryCode?: boolean;
   /**
@@ -114,7 +114,7 @@ const formatUSPhoneNumber = (digits: string): string => {
 
 export class PhoneNumberTransformer extends Transformer {
   constructor(options: PhoneNumberTransformerOptions = {}) {
-    const { country = 'US', stripCountryCode = true, debug = false } = options;
+    const { country = 'US', stripCountryCode = false, debug = false } = options;
 
     if (country !== 'US') {
       throw new Error(

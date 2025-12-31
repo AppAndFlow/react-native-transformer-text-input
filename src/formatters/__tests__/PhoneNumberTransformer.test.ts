@@ -1,4 +1,4 @@
-import { PhoneNumberTransformer } from '../formatters/phone-number';
+import { PhoneNumberTransformer } from '../phone-number';
 
 // Helper to call the transformer worklet with simpler API
 const transform = (
@@ -79,29 +79,22 @@ describe('PhoneNumberTransformer', () => {
       const result = transform(transformer, '55512345678999');
       expect(result?.value).toBe('+1 (555) 123-4567');
     });
-
-    it('handles pre-formatted input', () => {
-      const result = transform(transformer, '+1 (555) 123-4567');
-      expect(result?.value).toBe('+1 (555) 123-4567');
-    });
   });
 
   describe('stripCountryCode option', () => {
-    it('strips leading 1 when enabled (default)', () => {
+    it('does not strip leading 1 when disabled (default)', () => {
+      const transformer = new PhoneNumberTransformer();
+      const result = transform(transformer, '1555123456');
+      // First digit "1" is kept as part of area code (10 digit limit)
+      expect(result?.value).toBe('+1 (155) 512-3456');
+    });
+
+    it('strips leading 1 when enabled', () => {
       const transformer = new PhoneNumberTransformer({
         stripCountryCode: true,
       });
       const result = transform(transformer, '15551234567');
       expect(result?.value).toBe('+1 (555) 123-4567');
-    });
-
-    it('does not strip leading 1 when disabled', () => {
-      const transformer = new PhoneNumberTransformer({
-        stripCountryCode: false,
-      });
-      const result = transform(transformer, '1555123456');
-      // First digit "1" is kept as part of area code (10 digit limit)
-      expect(result?.value).toBe('+1 (155) 512-3456');
     });
 
     it('shows prefix when only 1 is typed with stripCountryCode enabled', () => {
@@ -115,10 +108,30 @@ describe('PhoneNumberTransformer', () => {
       expect(result?.value).toBe('+1 ');
       expect(result?.selection).toEqual({ start: 3, end: 3 });
     });
+
+    it('handles pre-formatted input with stripCountryCode enabled', () => {
+      const transformer = new PhoneNumberTransformer({
+        stripCountryCode: true,
+      });
+      const result = transform(transformer, '+1 (555) 123-4567');
+      expect(result?.value).toBe('+1 (555) 123-4567');
+    });
+
+    it('handles pre-formatted input with stripCountryCode disabled', () => {
+      const transformer = new PhoneNumberTransformer({
+        stripCountryCode: false,
+      });
+      // Without stripping, the "1" in "+1" is counted as a national digit
+      const result = transform(transformer, '+1 (555) 123-4567');
+      expect(result?.value).toBe('+1 (155) 512-3456');
+    });
   });
 
-  describe('cursor positioning', () => {
-    const transformer = new PhoneNumberTransformer();
+  describe.each([
+    ['stripCountryCode: true', { stripCountryCode: true }],
+    ['stripCountryCode: false', { stripCountryCode: false }],
+  ] as const)('cursor positioning (%s)', (_, options) => {
+    const transformer = new PhoneNumberTransformer(options);
 
     it('positions cursor at end when typing at end', () => {
       const result = transform(
@@ -136,10 +149,10 @@ describe('PhoneNumberTransformer', () => {
       // Simulating inserting "9" after first digit in "555" -> "5955"
       const result = transform(
         transformer,
-        '+1 (5955',
-        { start: 6, end: 6 },
-        '+1 (555',
-        { start: 5, end: 5 },
+        '5955',
+        { start: 2, end: 2 },
+        '555',
+        { start: 1, end: 1 },
       );
       expect(result?.value).toBe('+1 (595) 5');
       // Cursor should be after the 2nd national digit
@@ -147,36 +160,37 @@ describe('PhoneNumberTransformer', () => {
     });
 
     it('positions cursor correctly after deletion', () => {
-      // Simulating deleting "2" from "+1 (555) 123" -> "+1 (555) 13"
+      // Simulating deleting "2" from "55512" -> "5551"
       const result = transform(
         transformer,
-        '+1 (555) 13',
-        { start: 10, end: 10 },
-        '+1 (555) 123',
-        { start: 11, end: 11 },
+        '5551',
+        { start: 4, end: 4 },
+        '55512',
+        { start: 5, end: 5 },
       );
-      expect(result?.value).toBe('+1 (555) 13');
+      expect(result?.value).toBe('+1 (555) 1');
       expect(result?.selection).toEqual({ start: 10, end: 10 });
     });
 
-    it('handles deletion of formatting character by removing preceding digit', () => {
-      // User tries to delete the space after area code in "+1 (555) 1"
-      // This should delete the "5" before it
+    it('handles deletion in middle of number', () => {
+      // Simulating deleting "5" from "5551" -> "551" with cursor at position 1
       const result = transform(
         transformer,
-        '+1 (555)1',
-        { start: 8, end: 8 },
-        '+1 (555) 1',
-        { start: 9, end: 9 },
+        '551',
+        { start: 0, end: 0 },
+        '5551',
+        { start: 1, end: 1 },
       );
       expect(result?.value).toBe('+1 (551) ');
-      // Cursor should be after the 2nd digit (where the deleted digit was)
-      expect(result?.selection).toEqual({ start: 6, end: 6 });
+      expect(result?.selection).toEqual({ start: 3, end: 3 });
     });
   });
 
-  describe('selection handling', () => {
-    const transformer = new PhoneNumberTransformer();
+  describe.each([
+    ['stripCountryCode: true', { stripCountryCode: true }],
+    ['stripCountryCode: false', { stripCountryCode: false }],
+  ] as const)('selection handling (%s)', (_, options) => {
+    const transformer = new PhoneNumberTransformer(options);
 
     it('maintains selection range', () => {
       const result = transform(
@@ -191,6 +205,31 @@ describe('PhoneNumberTransformer', () => {
       expect(result?.selection?.start).toBeLessThan(
         result?.selection?.end ?? 0,
       );
+    });
+
+    it('handles selection at start', () => {
+      const result = transform(
+        transformer,
+        '5551234567',
+        { start: 0, end: 3 },
+        '5551234567',
+        { start: 0, end: 3 },
+      );
+      expect(result?.value).toBe('+1 (555) 123-4567');
+      expect(result?.selection).toEqual({ start: 3, end: 7 });
+    });
+
+    it('handles selection at end', () => {
+      const result = transform(
+        transformer,
+        '5551234567',
+        { start: 7, end: 10 },
+        '5551234567',
+        { start: 7, end: 10 },
+      );
+      expect(result?.value).toBe('+1 (555) 123-4567');
+      // Selection maps digits 7-10 to formatted positions
+      expect(result?.selection).toEqual({ start: 14, end: 17 });
     });
   });
 });

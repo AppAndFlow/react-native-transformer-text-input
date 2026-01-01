@@ -39,7 +39,8 @@ std::optional<jsi::WeakObject> LookupTransformer(int transformerId) {
 std::optional<TransformResult> RunTransformer(
     const std::optional<jsi::WeakObject> &transformer,
     const std::string &value,
-    SelectionRange selection) {
+    SelectionRange selection,
+    bool transform) {
   if (!transformer) {
     return std::nullopt;
   }
@@ -62,7 +63,8 @@ std::optional<TransformResult> RunTransformer(
       transformerFunction,
       jsi::String::createFromUtf8(jsiRuntime, value),
       jsi::Value(selection.start),
-      jsi::Value(selection.end));
+      jsi::Value(selection.end),
+      jsi::Value(transform));
 
   TransformResult result;
   auto resultObject = resultValue.asObject(jsiRuntime);

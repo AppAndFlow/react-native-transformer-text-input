@@ -27,6 +27,7 @@ std::optional<jsi::WeakObject> LookupTransformer(int transformerId);
 std::optional<TransformResult> RunTransformer(
     const std::optional<jsi::WeakObject> &transformer,
     const std::string &value,
-    SelectionRange selection);
+    SelectionRange selection,
+    bool transform);
 
 } // namespace rntti

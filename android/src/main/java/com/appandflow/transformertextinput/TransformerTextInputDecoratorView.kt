@@ -39,13 +39,16 @@ class TransformerTextInputDecoratorView(
     reactEditText?.setSelection(selection.start, selection.end)
   }
 
-  private fun transformTextState(state: TextState) =
-    TransformerTextInputJni.transform(
-      transformerId,
-      state.value,
-      state.selection.start,
-      state.selection.end,
-    ) ?: state
+  private fun transformTextState(
+    state: TextState,
+    transform: Boolean,
+  ) = TransformerTextInputJni.transform(
+    transformerId,
+    state.value,
+    state.selection.start,
+    state.selection.end,
+    transform,
+  ) ?: state
 
   fun setTransformerId(newTransformerId: Int) {
     transformerId = newTransformerId
@@ -109,7 +112,7 @@ class TransformerTextInputDecoratorView(
 
     val currentSelection = currentSelection()
     val current = TextState(editValue, currentSelection)
-    val next = transformTextState(current)
+    val next = transformTextState(current, true)
     val didTransformValue = next.value != current.value
     isUpdating = true
     try {
@@ -140,7 +143,7 @@ class TransformerTextInputDecoratorView(
     val providedValue = value ?: currentValue
     val providedSelection = TextSelection(selectionStart, selectionEnd)
     val provided = TextState(providedValue, providedSelection)
-    val next = if (transform) transformTextState(provided) else provided
+    val next = transformTextState(provided, transform)
 
     val didTransformValue = next.value != currentValue
     isUpdating = true

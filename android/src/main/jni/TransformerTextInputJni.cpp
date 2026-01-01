@@ -59,7 +59,8 @@ class JTransformerTextInputJni
       jint transformerId,
       jni::alias_ref<jni::JString> value,
       jint selectionStart,
-      jint selectionEnd) {
+      jint selectionEnd,
+      jboolean transform) {
     auto transformer = rntti::LookupTransformer(transformerId);
     if (!transformer) {
       return nullptr;
@@ -67,7 +68,8 @@ class JTransformerTextInputJni
     const auto currentValue = value->toStdString();
     rntti::SelectionRange selection{
         static_cast<int>(selectionStart), static_cast<int>(selectionEnd)};
-    auto result = rntti::RunTransformer(transformer, currentValue, selection);
+    auto result = rntti::RunTransformer(
+        transformer, currentValue, selection, static_cast<bool>(transform));
     if (!result) {
       return nullptr;
     }

@@ -180,6 +180,21 @@ describe('PatternTransformer', () => {
       expect(result?.value).toBe('(555) 12');
       expect(result?.selection).toEqual({ start: 8, end: 8 });
     });
+
+    it('does not lose last char when setting value directly', () => {
+      const transformer = new PatternTransformer({
+        pattern: '#### #### #### ####',
+      });
+      // Simulating setting a raw value over a formatted previous value
+      const result = transform(
+        transformer,
+        '4242424242424242', // Raw 16 digits
+        { start: 16, end: 16 },
+        '4242 4242 4242 4242', // Previous formatted (19 chars)
+        { start: 19, end: 19 },
+      );
+      expect(result?.value).toBe('4242 4242 4242 4242');
+    });
   });
 
   describe('cursor positioning', () => {

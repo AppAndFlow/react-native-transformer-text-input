@@ -238,9 +238,18 @@ export class PatternTransformer extends Transformer {
         usedDefinitions,
       );
 
+      // Detect formatting char deletion (backspace on a literal like "-" or " ")
+      // Requirements:
+      // 1. Small length change (1-2 chars)
+      // 2. Cursor moved by same amount as length change (confirms it's a backspace, not a value replacement)
+      // 3. Digit count unchanged
+      const lengthDiff = previousValue.length - value.length;
+      const cursorDiff = previousSelection.start - selection.start;
       const deletedFormattingChar =
         isCaret &&
-        value.length < previousValue.length &&
+        lengthDiff > 0 &&
+        lengthDiff <= 2 &&
+        cursorDiff === lengthDiff &&
         totalChars === prevTotalChars &&
         totalChars > 0;
 

@@ -7,6 +7,7 @@ type TransformerWrapper = (
   input: string,
   selectionStart: number,
   selectionEnd: number,
+  transform: boolean,
 ) => { value: string; selection: Selection };
 
 type ReactNativeTextInputTransformerRegistry = {
@@ -71,16 +72,19 @@ export function registerTransformer(transformer: Transformer): number {
       value,
       selectionStart,
       selectionEnd,
+      transform,
     ) => {
-      const result = worklet({
-        value,
-        previousValue: previousValue ?? value,
-        selection: { start: selectionStart, end: selectionEnd },
-        previousSelection: previousSelection ?? {
-          start: selectionStart,
-          end: selectionEnd,
-        },
-      });
+      const result = transform
+        ? worklet({
+            value,
+            previousValue: previousValue ?? value,
+            selection: { start: selectionStart, end: selectionEnd },
+            previousSelection: previousSelection ?? {
+              start: selectionStart,
+              end: selectionEnd,
+            },
+          })
+        : null;
       const newValue = result?.value ?? value;
       let newSelection: Selection;
       if (result?.selection != null) {

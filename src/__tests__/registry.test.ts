@@ -45,7 +45,7 @@ describe('registry', () => {
     const id = registerTransformer(transformer);
     const registry = globalThis.__rntti_registerTransformerRegistry;
     const wrapper = registry?.get(id);
-    const result = wrapper?.('abc', 0, 0);
+    const result = wrapper?.('abc', 0, 0, true);
 
     expect(result?.selection).toEqual({ start: 0, end: 0 });
   });
@@ -59,7 +59,7 @@ describe('registry', () => {
     const id = registerTransformer(transformer);
     const registry = globalThis.__rntti_registerTransformerRegistry;
     const wrapper = registry?.get(id);
-    const result = wrapper?.('abc', 0, 0);
+    const result = wrapper?.('abc', 0, 0, true);
 
     expect(result?.value).toEqual('abc');
   });
@@ -73,9 +73,28 @@ describe('registry', () => {
     const id = registerTransformer(transformer);
     const registry = globalThis.__rntti_registerTransformerRegistry;
     const wrapper = registry?.get(id);
-    const result = wrapper?.('abc', 0, 0);
+    const result = wrapper?.('abc', 0, 0, true);
 
     expect(result?.value).toEqual('abc');
     expect(result?.selection).toEqual({ start: 0, end: 0 });
+  });
+
+  it('does not call transformer when transform is false', () => {
+    let callCount = 0;
+    const transformer = new Transformer(({ value }) => {
+      'worklet';
+      callCount++;
+      return { value: value.toUpperCase(), selection: { start: 0, end: 0 } };
+    });
+
+    const id = registerTransformer(transformer);
+    const registry = globalThis.__rntti_registerTransformerRegistry;
+    const wrapper = registry?.get(id);
+
+    const result = wrapper?.('abc', 1, 2, false);
+
+    expect(callCount).toBe(0);
+    expect(result?.value).toEqual('abc');
+    expect(result?.selection).toEqual({ start: 1, end: 2 });
   });
 });

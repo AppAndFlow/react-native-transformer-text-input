@@ -21,5 +21,6 @@ object TransformerTextInputJni {
     value: String,
     selectionStart: Int,
     selectionEnd: Int,
+    transform: Boolean,
   ): TextState?
 }

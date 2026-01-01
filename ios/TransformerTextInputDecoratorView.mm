@@ -99,7 +99,7 @@ struct RNTTITextState {
   }
 }
 
-- (RNTTITextState)transformTextState:(RNTTITextState)state
+- (RNTTITextState)transformTextState:(RNTTITextState)state transform:(BOOL)transform
 {
   if (!_transformer) {
     return state;
@@ -107,7 +107,8 @@ struct RNTTITextState {
 
   rntti::SelectionRange selectionRange{
       static_cast<int>(state.selection.location), static_cast<int>(state.selection.location + state.selection.length)};
-  auto transformResult = rntti::RunTransformer(_transformer, RCTStringFromNSString(state.value), selectionRange);
+  auto transformResult =
+      rntti::RunTransformer(_transformer, RCTStringFromNSString(state.value), selectionRange, transform);
   if (!transformResult) {
     return state;
   }
@@ -174,7 +175,7 @@ struct RNTTITextState {
   NSString *currentValue = [self currentValue];
   NSRange currentSelection = [self currentSelection];
   RNTTITextState current{currentValue, currentSelection};
-  RNTTITextState next = [self transformTextState:current];
+  RNTTITextState next = [self transformTextState:current transform:YES];
   bool didTransformValue = ![next.value isEqualToString:current.value];
   if (didTransformValue) {
     [self applyValue:next.value];
@@ -241,7 +242,7 @@ struct RNTTITextState {
   NSString *providedValue = value ?: currentValue;
   NSRange providedSelection = NSMakeRange(selectionStart, selectionEnd - selectionStart);
   RNTTITextState provided{providedValue, providedSelection};
-  RNTTITextState next = transform ? [self transformTextState:provided] : provided;
+  RNTTITextState next = [self transformTextState:provided transform:transform];
   bool didTransformValue = ![next.value isEqualToString:currentValue];
   if (didTransformValue) {
     [self applyValue:next.value];

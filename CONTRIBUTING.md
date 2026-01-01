@@ -57,22 +57,22 @@ Running "TransformerInputExample" with {"fabric":true,"initialProps":{"concurren
 
 Note the `"fabric":true` and `"concurrentRoot":true` properties.
 
-Make sure your code passes TypeScript:
-
-```sh
-yarn typecheck
-```
-
-To check for linting errors, run the following:
+Make sure your code passes TypeScript and linting:
 
 ```sh
 yarn lint
 ```
 
-To fix formatting errors, run the following:
+To check formatting:
 
 ```sh
-yarn lint --fix
+yarn format:check
+```
+
+To fix formatting errors:
+
+```sh
+yarn format:write
 ```
 
 Remember to add tests for your change if possible. Run the unit tests by:
@@ -112,8 +112,11 @@ yarn release
 The `package.json` file contains various scripts for common tasks:
 
 - `yarn`: setup project by installing dependencies.
-- `yarn typecheck`: type-check files with TypeScript.
-- `yarn lint`: lint files with [ESLint](https://eslint.org/).
+- `yarn lint`: run all linters (TypeScript, ESLint, Android lint).
+- `yarn lint:ts`: type-check files with TypeScript.
+- `yarn lint:eslint`: lint files with [ESLint](https://eslint.org/).
+- `yarn format:check`: check code formatting (Prettier, clang-format, Spotless).
+- `yarn format:write`: fix code formatting issues.
 - `yarn test`: run unit tests with [Jest](https://jestjs.io/).
 - `yarn example start`: start the Metro server for the example app.
 - `yarn example android`: run the example app on Android.

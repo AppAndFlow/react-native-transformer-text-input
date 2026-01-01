@@ -45,6 +45,12 @@ describe('PhoneNumberTransformer', () => {
       expect(result).toEqual({ value: '', selection: { start: 0, end: 0 } });
     });
 
+    it('shows prefix when typing country code 1', () => {
+      const result = transform(transformer, '1');
+      expect(result?.value).toBe('+1 ');
+      expect(result?.selection).toEqual({ start: 3, end: 3 });
+    });
+
     it('formats partial area code', () => {
       const result = transform(transformer, '55');
       expect(result?.value).toBe('+1 (55');
@@ -62,7 +68,7 @@ describe('PhoneNumberTransformer', () => {
 
     it('formats area code and exchange', () => {
       const result = transform(transformer, '555123');
-      expect(result?.value).toBe('+1 (555) 123');
+      expect(result?.value).toBe('+1 (555) 123-');
     });
 
     it('formats complete phone number', () => {
@@ -133,7 +139,8 @@ describe('PhoneNumberTransformer', () => {
         { start: 1, end: 1 },
       );
       expect(result?.value).toBe('+1 (551) ');
-      expect(result?.selection).toEqual({ start: 3, end: 3 });
+      // Cursor at first placeholder position (after "+1 (")
+      expect(result?.selection).toEqual({ start: 4, end: 4 });
     });
   });
 
@@ -164,7 +171,8 @@ describe('PhoneNumberTransformer', () => {
         { start: 0, end: 3 },
       );
       expect(result?.value).toBe('+1 (555) 123-4567');
-      expect(result?.selection).toEqual({ start: 3, end: 7 });
+      // Selection start at first placeholder (position 4), end after 3rd digit (position 7)
+      expect(result?.selection).toEqual({ start: 4, end: 7 });
     });
 
     it('handles selection at end', () => {

@@ -10659,6 +10659,29 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-is-edge-to-edge@npm:1.2.1, react-native-is-edge-to-edge@npm:^1.2.1":
+  version: 1.2.1
+  resolution: "react-native-is-edge-to-edge@npm:1.2.1"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/87d20b900aded7d44c90afb946a7aa03c23a94ca3dd547bdddc2303b85357e4aab22567a57b19f1558d6c8be7058e3dcf34faa1e15182d1604f90974266d9a1d
+  languageName: node
+  linkType: hard
+
+"react-native-keyboard-controller@npm:^1.20.3":
+  version: 1.20.3
+  resolution: "react-native-keyboard-controller@npm:1.20.3"
+  dependencies:
+    react-native-is-edge-to-edge: "npm:^1.2.1"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+    react-native-reanimated: ">=3.0.0"
+  checksum: 10c0/9bf62b0ca050a692a6208b0888faa00e102d033b7567cd8ecb5fec4753d95d90a8a8f55d44802995a87d3985ff2c43b801676ece7aeca99150bc43a00ef1a896
+  languageName: node
+  linkType: hard
+
 "react-native-monorepo-config@npm:^0.3.1":
   version: 0.3.2
   resolution: "react-native-monorepo-config@npm:0.3.2"
@@ -10666,6 +10689,30 @@ __metadata:
     escape-string-regexp: "npm:^5.0.0"
     fast-glob: "npm:^3.3.3"
   checksum: 10c0/c711f6a898ae263b68aef3bf8bd9c3806cd489676da8c5480dd155859b47bcd49a7700f3c056896c19b3ce2c2c3ea42a5482def93b0ff03febbe023ceb128c96
+  languageName: node
+  linkType: hard
+
+"react-native-reanimated@npm:^4.2.1":
+  version: 4.2.1
+  resolution: "react-native-reanimated@npm:4.2.1"
+  dependencies:
+    react-native-is-edge-to-edge: "npm:1.2.1"
+    semver: "npm:7.7.3"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+    react-native-worklets: ">=0.7.0"
+  checksum: 10c0/1458fb634d374125931c5815b2b0941e12b1a880ba12b4ff6bba12b6c101e0ce1f5c32a2226034ae762558e38077ae112d8498eb2c8af6bd967524c7e7f87c6b
+  languageName: node
+  linkType: hard
+
+"react-native-safe-area-context@npm:^5.6.2":
+  version: 5.6.2
+  resolution: "react-native-safe-area-context@npm:5.6.2"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/3c8df21a1dbac83116b9c9bd5d20b7c1bb7649ecef44a111af6fb6b237241f5f4d692189eec30a69f5701b857249257da3621b9e17165460a2bb71faac7b92ae
   languageName: node
   linkType: hard
 
@@ -10686,7 +10733,10 @@ __metadata:
     react: "npm:19.2.0"
     react-native: "npm:0.83.0"
     react-native-builder-bob: "npm:^0.40.17"
+    react-native-keyboard-controller: "npm:^1.20.3"
     react-native-monorepo-config: "npm:^0.3.1"
+    react-native-reanimated: "npm:^4.2.1"
+    react-native-safe-area-context: "npm:^5.6.2"
     react-native-worklets: "npm:^0.7.1"
   languageName: unknown
   linkType: soft

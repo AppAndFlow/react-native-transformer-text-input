@@ -1,7 +1,7 @@
 jest.mock('react-native-worklets');
 jest.mock('../NativeTransformerTextInputModule');
 
-const makeWorklet =
+const createWorklet =
   () =>
   ({
     value,
@@ -27,7 +27,7 @@ describe('registry', () => {
   });
 
   it('registers and unregisters transformers', () => {
-    const transformer = new Transformer(makeWorklet());
+    const transformer = new Transformer(createWorklet());
     const id = registerTransformer(transformer);
     const registry = globalThis.__rntti_registerTransformerRegistry;
 

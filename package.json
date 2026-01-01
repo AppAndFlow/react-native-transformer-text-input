@@ -15,6 +15,11 @@
       "types": "./lib/typescript/src/formatters/phone-number.d.ts",
       "default": "./lib/module/formatters/phone-number.js"
     },
+    "./formatters/pattern": {
+      "source": "./src/formatters/pattern.ts",
+      "types": "./lib/typescript/src/formatters/pattern.d.ts",
+      "default": "./lib/module/formatters/pattern.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

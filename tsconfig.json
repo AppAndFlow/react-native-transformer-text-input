@@ -3,7 +3,8 @@
     "rootDir": ".",
     "paths": {
       "react-native-transformer-text-input": ["./src/index"],
-      "react-native-transformer-text-input/formatters/phone-number": ["./src/formatters/phone-number"]
+      "react-native-transformer-text-input/formatters/phone-number": ["./src/formatters/phone-number"],
+      "react-native-transformer-text-input/formatters/pattern": ["./src/formatters/pattern"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

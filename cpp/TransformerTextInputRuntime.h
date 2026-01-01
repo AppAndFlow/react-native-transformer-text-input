@@ -19,7 +19,8 @@ struct TransformResult {
   SelectionRange selection;
 };
 
-void SetUIWorkletRuntime(const std::shared_ptr<worklets::WorkletRuntime> &runtime);
+void SetUIWorkletRuntime(
+    const std::shared_ptr<worklets::WorkletRuntime> &runtime);
 
 std::optional<jsi::WeakObject> LookupTransformer(int transformerId);
 

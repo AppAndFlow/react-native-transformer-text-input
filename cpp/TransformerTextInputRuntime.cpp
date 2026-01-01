@@ -6,7 +6,8 @@ namespace {
 std::weak_ptr<worklets::WorkletRuntime> gUiRuntime;
 } // namespace
 
-void SetUIWorkletRuntime(const std::shared_ptr<worklets::WorkletRuntime> &runtime) {
+void SetUIWorkletRuntime(
+    const std::shared_ptr<worklets::WorkletRuntime> &runtime) {
   if (!runtime) {
     gUiRuntime.reset();
     return;

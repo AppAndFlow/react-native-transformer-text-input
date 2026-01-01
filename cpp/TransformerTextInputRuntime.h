@@ -21,10 +21,10 @@ struct TransformResult {
 
 void SetUIWorkletRuntime(const std::shared_ptr<worklets::WorkletRuntime> &runtime);
 
-std::optional<jsi::Function> LookupTransformer(int transformerId);
+std::optional<jsi::WeakObject> LookupTransformer(int transformerId);
 
 std::optional<TransformResult> RunTransformer(
-    const jsi::Function &transformer,
+    const std::optional<jsi::WeakObject> &transformer,
     const std::string &value,
     SelectionRange selection);
 

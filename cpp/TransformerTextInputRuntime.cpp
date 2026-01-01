@@ -14,7 +14,7 @@ void SetUIWorkletRuntime(const std::shared_ptr<worklets::WorkletRuntime> &runtim
   runtime->schedule([runtime]() { gUiRuntime = runtime; });
 }
 
-std::optional<jsi::Function> LookupTransformer(int transformerId) {
+std::optional<jsi::WeakObject> LookupTransformer(int transformerId) {
   auto uiRuntime = gUiRuntime.lock();
   if (!uiRuntime) {
     return std::nullopt;
@@ -32,13 +32,17 @@ std::optional<jsi::Function> LookupTransformer(int transformerId) {
     return std::nullopt;
   }
 
-  return transformerValue.asObject(runtime).asFunction(runtime);
+  return jsi::WeakObject(runtime, transformerValue.asObject(runtime));
 }
 
 std::optional<TransformResult> RunTransformer(
-    const jsi::Function &transformer,
+    const std::optional<jsi::WeakObject> &transformer,
     const std::string &value,
     SelectionRange selection) {
+  if (!transformer) {
+    return std::nullopt;
+  }
+
   auto uiRuntime = gUiRuntime.lock();
   if (!uiRuntime) {
     return std::nullopt;
@@ -46,8 +50,15 @@ std::optional<TransformResult> RunTransformer(
 
   auto &jsiRuntime = uiRuntime->getJSIRuntime();
 
+  auto transformerValue = transformer->lock(jsiRuntime);
+  if (transformerValue.isUndefined()) {
+    return std::nullopt;
+  }
+
+  auto transformerFunction =
+      transformerValue.asObject(jsiRuntime).asFunction(jsiRuntime);
   auto resultValue = uiRuntime->runSync(
-      transformer,
+      transformerFunction,
       jsi::String::createFromUtf8(jsiRuntime, value),
       jsi::Value(selection.start),
       jsi::Value(selection.end));

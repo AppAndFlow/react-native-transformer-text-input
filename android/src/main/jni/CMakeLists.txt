@@ -8,7 +8,31 @@ set(LIB_ANDROID_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
 set(LIB_COMMON_DIR ${LIB_ANDROID_DIR}/../cpp)
 set(LIB_ANDROID_GENERATED_JNI_DIR ${LIB_ANDROID_DIR}/build/generated/source/codegen/jni)
 set(LIB_ANDROID_GENERATED_COMPONENTS_DIR ${LIB_ANDROID_GENERATED_JNI_DIR}/react/renderer/components/${LIB_LITERAL})
-set(REACT_NATIVE_WORKLETS_DIR ${LIB_ANDROID_DIR}/../node_modules/react-native-worklets)
+
+# Resolve path to react-native-worklets.
+set(REACT_NATIVE_WORKLETS_DIR "" CACHE PATH "Path to react-native-worklets root directory")
+
+if(NOT DEFINED REACT_NATIVE_WORKLETS_DIR OR "${REACT_NATIVE_WORKLETS_DIR}" STREQUAL "")
+  set(NODE_BINARY "node" CACHE STRING "Path to Node.js binary")
+
+  execute_process(
+    COMMAND "${NODE_BINARY}" -p "require.resolve('react-native-worklets/package.json')"
+    WORKING_DIRECTORY "${PROJECT_ROOT_DIR}/.."
+    OUTPUT_VARIABLE _worklets_pkg_json
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE _worklets_res
+    ERROR_QUIET
+  )
+
+  if (NOT _worklets_res EQUAL 0)
+    message(FATAL_ERROR
+      "Failed to resolve 'react-native-worklets' with Node from '${PROJECT_ROOT_DIR}/..'. "
+      "Set REACT_NATIVE_WORKLETS_DIR or NODE_BINARY explicitly."
+    )
+  endif()
+
+  get_filename_component(REACT_NATIVE_WORKLETS_DIR "${_worklets_pkg_json}" DIRECTORY)
+endif()
 
 file(GLOB LIB_CUSTOM_SRCS CONFIGURE_DEPENDS *.cpp ${LIB_COMMON_DIR}/*.cpp)
 file(GLOB LIB_CODEGEN_SRCS CONFIGURE_DEPENDS ${LIB_ANDROID_GENERATED_JNI_DIR}/*.cpp ${LIB_ANDROID_GENERATED_COMPONENTS_DIR}/*.cpp)
@@ -33,8 +57,11 @@ target_include_directories(
   "${REACT_NATIVE_WORKLETS_DIR}/android/src/main/cpp"
 )
 
-message(STATUS "ANDROID_NDK_BUILD_TYPE = ${ANDROID_NDK_BUILD_TYPE}")
-
+if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
+  set(BUILD_TYPE "debug")
+else()
+  set(BUILD_TYPE "release")
+endif()
 
 add_library(worklets SHARED IMPORTED)
 
@@ -42,7 +69,7 @@ set_target_properties(
   worklets
   PROPERTIES
     IMPORTED_LOCATION
-    "${REACT_NATIVE_WORKLETS_DIR}/android/build/intermediates/cmake/debug/obj/${ANDROID_ABI}/libworklets.so"
+    "${REACT_NATIVE_WORKLETS_DIR}/android/build/intermediates/cmake/${BUILD_TYPE}/obj/${ANDROID_ABI}/libworklets.so"
 )
 
 target_link_libraries(

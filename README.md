@@ -2,6 +2,16 @@
 
 TextInput component that allows transforming text synchronously with a worklet.
 
+## Motivation
+
+Transforming input as users type is common—phone numbers, credit cards, usernames. Existing approaches have trade-offs:
+
+**Pattern-based masking** (e.g., [react-native-advanced-input-mask](https://github.com/IvanIhnatsiuk/react-native-advanced-input-mask)) uses declarative patterns like `+1 ([000]) [000]-[0000]`. This works well for fixed formats, but patterns can't express conditional logic, variable-length formats, or transformations that depend on context.
+
+**Controlled inputs** (`value` + `onChangeText` + state) give you full JS flexibility, but create a native → JS → re-render → native round-trip. This causes visible lag and cursor flicker—the input feels sluggish because keystrokes are corrected asynchronously.
+
+**This library** combines JS flexibility with synchronous execution. Your transform runs as a worklet on the UI thread—no bridge delay, no flicker. Write any logic you need with the responsiveness of a native input.
+
 ## Installation
 ```sh
 npm install react-native-transformer-text-input
@@ -98,6 +108,29 @@ Default behavior when no `selection` is returned:
 
 The library includes ready-to-use transformers for common use cases.
 
+### PatternTransformer
+
+Formats input using a pattern string with placeholder characters.
+
+```tsx
+import { PatternTransformer } from 'react-native-transformer-text-input/formatters/pattern';
+
+const dateTransformer = new PatternTransformer({
+  pattern: '##/##/####',  // # = digit, A = letter, * = alphanumeric
+});
+
+// Formats as: 12/31/2024
+<TransformerTextInput
+  transformer={dateTransformer}
+  keyboardType="number-pad"
+/>
+```
+
+Options:
+- `pattern`: Pattern string where `#` matches digits, `A` matches letters, `*` matches alphanumeric.
+- `definitions`: Custom placeholder definitions (e.g., `{ 'X': /[0-9A-F]/i }` for hex).
+- `showTrailingLiterals`: Show literal characters after the last input (default: `false`).
+
 ### PhoneNumberTransformer
 
 Formats phone numbers as the user types.
@@ -123,7 +156,7 @@ Code in this repository is thought through and mostly written by humans, with AI
 
 ## Acknowledgments
 
-- [react-native-live-markdown](https://github.com/Expensify/react-native-live-markdown) for an example of how to extend TextInput.
+- [react-native-live-markdown](https://github.com/Expensify/react-native-live-markdown) and [react-native-advanced-input-mask](https://github.com/IvanIhnatsiuk/react-native-advanced-input-mask) for examples of how to extend TextInput.
 - [react-native-worklets](https://github.com/software-mansion/react-native-reanimated/tree/main/packages/react-native-worklets) for the worklet runtime powering UI-thread execution.
 
 ## Contributing

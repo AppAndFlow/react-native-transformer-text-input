@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
   type TextInputProps,
+  StatusBar,
 } from 'react-native';
 import {
   KeyboardAwareScrollView,
@@ -160,6 +161,7 @@ export default function App() {
   return (
     <KeyboardProvider>
       <SafeAreaProvider>
+        <StatusBar barStyle="dark-content" />
         <AppContent />
       </SafeAreaProvider>
     </KeyboardProvider>

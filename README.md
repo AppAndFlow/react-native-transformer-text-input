@@ -4,13 +4,13 @@ TextInput component that allows transforming text synchronously with a worklet.
 
 ## Motivation
 
-Transforming input as users type is common—phone numbers, credit cards, usernames. Existing approaches have trade-offs:
+Transforming input as users type is common — phone numbers, credit cards, usernames. Existing approaches have trade-offs:
 
 **Pattern-based masking** (e.g., [react-native-advanced-input-mask](https://github.com/IvanIhnatsiuk/react-native-advanced-input-mask)) uses declarative patterns like `+1 ([000]) [000]-[0000]`. This works well for fixed formats, but patterns can't express conditional logic, variable-length formats, or transformations that depend on context.
 
 **Controlled inputs** (`value` + `onChangeText` + state) give you full JS flexibility, but create a native → JS → re-render → native round-trip. This causes visible lag and cursor flicker—the input feels sluggish because keystrokes are corrected asynchronously.
 
-**This library** combines JS flexibility with synchronous execution. Your transform runs as a worklet on the UI thread—no bridge delay, no flicker. Write any logic you need with the responsiveness of a native input.
+**This library** combines JS flexibility with synchronous execution. Your transform runs as a worklet on the UI thread — no bridge delay, no flicker. Write any logic you need with the responsiveness of a native input.
 
 ## Installation
 ```sh

@@ -1,4 +1,4 @@
-# react-native-transformer-text-input
+# React Native Transformer Text Input
 
 TextInput component that allows transforming text synchronously with a worklet.
 

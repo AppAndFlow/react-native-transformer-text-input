@@ -1,18 +1,23 @@
 import { Transformer, type Selection } from '../Transformer';
-import { PatternTransformer } from './pattern';
+import { COUNTRY_PHONE_DATA, type PhoneFormat } from './phone-data';
 
 export type PhoneNumberTransformerOptions = {
   /**
-   * Country code for phone number formatting.
-   * Currently only 'US' is supported.
+   * ISO 3166-1 alpha-2 country code for phone number formatting.
    * @default 'US'
    */
-  country?: 'US';
+  country?: string;
   /**
    * Enable debug logging for transformer operations.
    * @default false
    */
   debug?: boolean;
+};
+
+// Extract all digits from text
+const extractDigits = (text: string): string => {
+  'worklet';
+  return text.replace(/\D/g, '');
 };
 
 // Count digits before a position in text
@@ -28,16 +33,214 @@ const countDigitsBefore = (text: string, pos: number): number => {
   return count;
 };
 
-// Extract all digits from text
-const extractDigits = (text: string): string => {
+// Select the best format for a given national number based on leading digits.
+// Iterates formats and tests the leadingDigits regex against the start of digits.
+// Returns the first match, or the last format as fallback.
+const selectFormat = (
+  nationalDigits: string,
+  formats: PhoneFormat[],
+): PhoneFormat | null => {
   'worklet';
-  return text.replace(/\D/g, '');
+  if (formats.length === 0) return null;
+  if (nationalDigits.length === 0) return formats[formats.length - 1]!;
+
+  for (const format of formats) {
+    if (!format.leadingDigits) {
+      // No leading digits constraint — matches everything
+      return format;
+    }
+    // Test leading digits regex against the national digits.
+    // The regex should match from the start of the digits.
+    const re = new RegExp('^(?:' + format.leadingDigits + ')');
+    if (re.test(nationalDigits)) {
+      return format;
+    }
+  }
+
+  // Fallback to last format
+  return formats[formats.length - 1]!;
 };
 
-// Get national digits (strip leading 1 if present)
-const getNationalDigits = (allDigits: string): string => {
+// Count the max digits the format pattern can consume by counting \d occurrences
+// in the capture groups.
+const getFormatMaxDigits = (pattern: string): number => {
   'worklet';
-  return allDigits.startsWith('1') ? allDigits.slice(1) : allDigits;
+  let count = 0;
+  // Each \\d or \d in the pattern represents one digit slot.
+  // But patterns use quantifiers like {3} or {3,4} — we want the max.
+  // Simple approach: count the max digits by examining the pattern groups.
+  // Groups look like (\d{3}) or (\d{2,4}) or (\d{3,12})
+  // We'll parse {n} and {n,m} to get max values.
+  let i = 0;
+  while (i < pattern.length) {
+    if (
+      pattern[i] === '\\' &&
+      i + 1 < pattern.length &&
+      pattern[i + 1] === 'd'
+    ) {
+      i += 2;
+      if (i < pattern.length && pattern[i] === '{') {
+        // Parse {n} or {n,m}
+        const closeBrace = pattern.indexOf('}', i);
+        if (closeBrace !== -1) {
+          const inner = pattern.slice(i + 1, closeBrace);
+          const commaIdx = inner.indexOf(',');
+          if (commaIdx !== -1) {
+            // {n,m} — use max
+            count += parseInt(inner.slice(commaIdx + 1), 10) || 0;
+          } else {
+            count += parseInt(inner, 10) || 0;
+          }
+          i = closeBrace + 1;
+        }
+      } else {
+        // Just \d without quantifier — 1 digit
+        count += 1;
+      }
+    } else {
+      i++;
+    }
+  }
+  return count;
+};
+
+// Build a partial format for when we don't have enough digits to match the full pattern.
+// We expand digit groups one at a time and fill what we can.
+const buildPartialFormat = (digits: string, format: PhoneFormat): string => {
+  'worklet';
+  // Parse the pattern to extract groups
+  // Pattern like (\d{3})(\d{3})(\d{4}) with template ($1) $2-$3
+  // We need to figure out group sizes and fill them progressively
+
+  const groups: number[] = [];
+  let i = 0;
+  const pattern = format.pattern;
+
+  while (i < pattern.length) {
+    if (pattern[i] === '(' && i + 1 < pattern.length) {
+      // Find matching close paren
+      let depth = 1;
+      let j = i + 1;
+      while (j < pattern.length && depth > 0) {
+        if (pattern[j] === '(') depth++;
+        else if (pattern[j] === ')') depth--;
+        j++;
+      }
+      // Extract group content
+      const groupContent = pattern.slice(i + 1, j - 1);
+      // Count max digits in this group
+      const groupMax = getFormatMaxDigits(groupContent);
+      if (groupMax > 0) {
+        groups.push(groupMax);
+      }
+      i = j;
+    } else {
+      i++;
+    }
+  }
+
+  if (groups.length === 0) return digits;
+
+  // Build the result by walking the template and replacing placeholders.
+  // We track which groups got filled and which didn't.
+  let digitIdx = 0;
+  let result = '';
+  let lastGroupComplete = false;
+  let allGroupsFilled = true;
+
+  // Walk through the template character by character
+  let ti = 0;
+  while (ti < format.template.length) {
+    const tc = format.template[ti];
+    if (tc === '$' && ti + 1 < format.template.length) {
+      const groupNum = parseInt(format.template[ti + 1]!, 10);
+      if (!isNaN(groupNum) && groupNum >= 1 && groupNum <= groups.length) {
+        const groupSize = groups[groupNum - 1]!;
+        const available = digits.length - digitIdx;
+        if (available <= 0) {
+          allGroupsFilled = false;
+          break;
+        }
+        const chunk = digits.slice(digitIdx, digitIdx + groupSize);
+        digitIdx += chunk.length;
+        result += chunk;
+        lastGroupComplete = chunk.length === groupSize;
+        if (chunk.length < groupSize) {
+          allGroupsFilled = false;
+          break;
+        }
+        ti += 2;
+        continue;
+      }
+    }
+    // Literal character — only include if we haven't run out of digits
+    result += tc;
+    ti++;
+  }
+
+  if (allGroupsFilled) {
+    return result;
+  }
+
+  // Handle trailing: if last group was fully filled, keep trailing separators
+  // (like "555" → "(555) " with template "($1) $2-$3")
+  // If last group was NOT fully filled, strip trailing non-digit chars
+  if (lastGroupComplete) {
+    // Keep trailing separators up to the next placeholder
+    return result;
+  }
+
+  // Strip trailing non-digit chars for incomplete groups
+  return result.replace(/[^\d]+$/, '');
+};
+
+// Apply a format to national digits. Returns the formatted national number.
+const applyFormat = (nationalDigits: string, format: PhoneFormat): string => {
+  'worklet';
+  const re = new RegExp(format.pattern);
+  const maxDigits = getFormatMaxDigits(format.pattern);
+  const clamped = nationalDigits.slice(0, maxDigits);
+
+  // Only apply template if we have enough digits for at least the first group
+  const match = clamped.match(re);
+  if (match) {
+    return clamped.replace(re, format.template);
+  }
+
+  // Partial input — build a partial format by expanding the pattern groups progressively.
+  return buildPartialFormat(clamped, format);
+};
+
+// Map cursor position from digit-space to formatted-space.
+// Given a count of digits the cursor is after, find the position
+// in the formatted string after that many digits.
+const mapCursorToFormatted = (
+  formatted: string,
+  digitCount: number,
+): number => {
+  'worklet';
+  if (digitCount <= 0) {
+    // Find position of first digit in formatted string
+    for (let i = 0; i < formatted.length; i++) {
+      const c = formatted[i];
+      if (c !== undefined && c >= '0' && c <= '9') {
+        return i;
+      }
+    }
+    return 0;
+  }
+
+  let count = 0;
+  for (let i = 0; i < formatted.length; i++) {
+    const c = formatted[i];
+    if (c !== undefined && c >= '0' && c <= '9') {
+      count++;
+      if (count === digitCount) {
+        return i + 1;
+      }
+    }
+  }
+  return formatted.length;
 };
 
 export class PhoneNumberTransformer extends Transformer {
@@ -45,19 +248,16 @@ export class PhoneNumberTransformer extends Transformer {
     country = 'US',
     debug = false,
   }: PhoneNumberTransformerOptions = {}) {
-    if (country !== 'US') {
+    const countryData = COUNTRY_PHONE_DATA[country];
+    if (!countryData) {
       throw new Error(
-        `[PhoneNumberTransformer] Country "${country}" is not supported. Only "US" is currently supported.`,
+        `[PhoneNumberTransformer] Country "${country}" is not supported.`,
       );
     }
 
-    const patternTransformer = new PatternTransformer({
-      pattern: '+1 (###) ###-####',
-      showTrailingLiterals: true,
-      debug,
-    });
-
-    const patternTransformerWorklet = patternTransformer.worklet;
+    const callingCode = countryData.callingCode;
+    const formats = countryData.formats;
+    const prefix = '+' + callingCode + ' ';
 
     const worklet = (input: {
       value: string;
@@ -73,34 +273,49 @@ export class PhoneNumberTransformer extends Transformer {
       const allDigits = extractDigits(value);
       const prevAllDigits = extractDigits(previousValue);
 
-      const strippedLeading1 = allDigits.startsWith('1');
-      const prevStrippedLeading1 = prevAllDigits.startsWith('1');
-
-      let nationalDigits = getNationalDigits(allDigits);
-      const prevNationalDigits = getNationalDigits(prevAllDigits);
-
-      // Special case: only country code "1" remains
-      if (nationalDigits.length === 0 && allDigits === '1') {
-        // If deleting, clear everything
-        if (value.length < previousValue.length) {
-          return { value: '', selection: { start: 0, end: 0 } };
-        }
-        // Otherwise user just typed "1", show "+1 " prefix
-        return { value: '+1 ', selection: { start: 3, end: 3 } };
+      // Strip calling code from front to get national digits
+      let nationalDigits: string;
+      let strippedCallingCode = false;
+      if (allDigits.startsWith(callingCode)) {
+        nationalDigits = allDigits.slice(callingCode.length);
+        strippedCallingCode = true;
+      } else {
+        nationalDigits = allDigits;
       }
 
-      // Calculate digit positions for selection start and end
+      let prevNationalDigits: string;
+      if (prevAllDigits.startsWith(callingCode)) {
+        prevNationalDigits = prevAllDigits.slice(callingCode.length);
+      } else {
+        prevNationalDigits = prevAllDigits;
+      }
+
+      // Special case: only calling code digits remain
+      if (nationalDigits.length === 0 && strippedCallingCode) {
+        if (value.length < previousValue.length) {
+          // Deleting — clear everything
+          return { value: '', selection: { start: 0, end: 0 } };
+        }
+        // Show prefix
+        return {
+          value: prefix,
+          selection: { start: prefix.length, end: prefix.length },
+        };
+      }
+
+      // Handle completely empty
+      if (allDigits.length === 0) {
+        return { value: '', selection: { start: 0, end: 0 } };
+      }
+
+      // Calculate digit positions for cursor mapping
       const digitsBeforeStart = countDigitsBefore(value, selection.start);
       const digitsBeforeEnd = countDigitsBefore(value, selection.end);
-      const adjustedStart = strippedLeading1
-        ? Math.max(0, digitsBeforeStart - 1)
-        : digitsBeforeStart;
-      const adjustedEnd = strippedLeading1
-        ? Math.max(0, digitsBeforeEnd - 1)
-        : digitsBeforeEnd;
+      const callingCodeLen = strippedCallingCode ? callingCode.length : 0;
+      const adjustedStart = Math.max(0, digitsBeforeStart - callingCodeLen);
+      const adjustedEnd = Math.max(0, digitsBeforeEnd - callingCodeLen);
 
-      // Detect formatting char deletion at this level
-      // (PatternTransformer can't detect it because we pass only digits)
+      // Detect formatting char deletion
       const isCaret = selection.start === selection.end;
       const deletedFormattingChar =
         isCaret &&
@@ -108,7 +323,6 @@ export class PhoneNumberTransformer extends Transformer {
         nationalDigits.length === prevNationalDigits.length &&
         nationalDigits.length > 0;
 
-      // If formatting char was deleted, remove the digit before cursor
       let finalStart = adjustedStart;
       let finalEnd = adjustedEnd;
       if (deletedFormattingChar && adjustedStart > 0) {
@@ -119,33 +333,56 @@ export class PhoneNumberTransformer extends Transformer {
         finalEnd = adjustedStart - 1;
       }
 
-      // For previous value selection
-      const prevDigitsBeforeStart = countDigitsBefore(
-        previousValue,
-        previousSelection.start,
-      );
-      const prevDigitsBeforeEnd = countDigitsBefore(
-        previousValue,
-        previousSelection.end,
-      );
-      const prevAdjustedStart = prevStrippedLeading1
-        ? Math.max(0, prevDigitsBeforeStart - 1)
-        : prevDigitsBeforeStart;
-      const prevAdjustedEnd = prevStrippedLeading1
-        ? Math.max(0, prevDigitsBeforeEnd - 1)
-        : prevDigitsBeforeEnd;
+      // Select format based on leading digits
+      const format = selectFormat(nationalDigits, formats);
+      if (!format) {
+        // No format available — just show digits with prefix
+        const result = prefix + nationalDigits;
+        const pos = prefix.length + finalStart;
+        return { value: result, selection: { start: pos, end: pos } };
+      }
 
-      // Call pattern transformer
-      // Pass the modified nationalDigits directly as the "extracted" value
-      // Use same length for prev to avoid triggering PatternTransformer's deletion logic
-      return patternTransformerWorklet({
-        value: nationalDigits,
-        selection: { start: finalStart, end: finalEnd },
-        previousValue: deletedFormattingChar
-          ? nationalDigits
-          : prevNationalDigits,
-        previousSelection: { start: prevAdjustedStart, end: prevAdjustedEnd },
-      });
+      // Apply the selected format
+      const formatted = applyFormat(nationalDigits, format);
+      const result = prefix + formatted;
+
+      // Map cursor position
+      const cursorAtEnd = selection.end >= value.length;
+      const prevCursorAtEnd = previousSelection.end >= previousValue.length;
+
+      if (debug) {
+        console.log('[PhoneNumberTransformer]', {
+          input: { value, selection },
+          nationalDigits,
+          format: format.template,
+          formatted,
+          result,
+          cursor: {
+            finalStart,
+            finalEnd,
+            deletedFormattingChar,
+          },
+        });
+      }
+
+      // Cursor at end — put at end
+      if (isCaret && cursorAtEnd && prevCursorAtEnd) {
+        return {
+          value: result,
+          selection: { start: result.length, end: result.length },
+        };
+      }
+
+      // Map cursor through the formatted output
+      // We need to find where digit N is in the formatted result
+      const newStart =
+        prefix.length + mapCursorToFormatted(formatted, finalStart);
+      const newEnd = prefix.length + mapCursorToFormatted(formatted, finalEnd);
+
+      return {
+        value: result,
+        selection: { start: newStart, end: newEnd },
+      };
     };
 
     super(worklet);

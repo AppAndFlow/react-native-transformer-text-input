@@ -150,7 +150,11 @@ struct RNTTITextState {
       [textInputComponentView valueForKey:@"_backedTextInputView"];
 
   _backedTextInput = backedTextInputView;
-  _baseDelegate = backedTextInputView.textInputDelegate;
+  id<RCTBackedTextInputDelegate> currentDelegate = backedTextInputView.textInputDelegate;
+  // Guard against setting ourselves as baseDelegate (would cause infinite recursion)
+  if (currentDelegate != self) {
+    _baseDelegate = currentDelegate;
+  }
   backedTextInputView.textInputDelegate = self;
 
   _observersAdded = true;
@@ -158,6 +162,9 @@ struct RNTTITextState {
 
 - (void)removeTextInputObservers
 {
+  if (_backedTextInput && _baseDelegate) {
+    _backedTextInput.textInputDelegate = _baseDelegate;
+  }
   _backedTextInput = nil;
   _baseDelegate = nil;
   _observersAdded = false;
@@ -204,7 +211,11 @@ struct RNTTITextState {
 
 - (BOOL)textInputShouldBeginEditing
 {
-  return [_baseDelegate textInputShouldBeginEditing];
+  id<RCTBackedTextInputDelegate> delegate = _baseDelegate;
+  if (delegate == nil || delegate == self) {
+    return YES;
+  }
+  return [delegate textInputShouldBeginEditing];
 }
 
 - (nonnull NSString *)textInputShouldChangeText:(nonnull NSString *)text inRange:(NSRange)range

@@ -29,11 +29,17 @@ describe('PhoneNumberTransformer', () => {
       expect(() => new PhoneNumberTransformer({ country: 'US' })).not.toThrow();
     });
 
+    it('creates transformer with any valid country', () => {
+      expect(() => new PhoneNumberTransformer({ country: 'CA' })).not.toThrow();
+      expect(() => new PhoneNumberTransformer({ country: 'DE' })).not.toThrow();
+      expect(() => new PhoneNumberTransformer({ country: 'GB' })).not.toThrow();
+      expect(() => new PhoneNumberTransformer({ country: 'JP' })).not.toThrow();
+    });
+
     it('throws for unsupported country', () => {
-      expect(
-        // @ts-expect-error - testing invalid country
-        () => new PhoneNumberTransformer({ country: 'CA' }),
-      ).toThrow(/Country "CA" is not supported/);
+      expect(() => new PhoneNumberTransformer({ country: 'XX' })).toThrow(
+        /Country "XX" is not supported/,
+      );
     });
   });
 
@@ -186,6 +192,91 @@ describe('PhoneNumberTransformer', () => {
       expect(result?.value).toBe('+1 (555) 123-4567');
       // Selection maps digits 7-10 to formatted positions
       expect(result?.selection).toEqual({ start: 14, end: 17 });
+    });
+  });
+
+  describe('Germany (DE)', () => {
+    const transformer = new PhoneNumberTransformer({ country: 'DE' });
+
+    it('formats Berlin number (2-digit area code)', () => {
+      const result = transform(transformer, '301234567');
+      expect(result?.value).toBe('+49 30 1234567');
+    });
+
+    it('formats Munich number (2-digit area code)', () => {
+      const result = transform(transformer, '8912345678');
+      expect(result?.value).toBe('+49 89 12345678');
+    });
+
+    it('formats mobile number (1511)', () => {
+      const result = transform(transformer, '15112345678');
+      expect(result?.value).toBe('+49 1511 2345678');
+    });
+
+    it('formats mobile number (170)', () => {
+      const result = transform(transformer, '1701234567');
+      expect(result?.value).toBe('+49 170 1234567');
+    });
+
+    it('formats partial Berlin number', () => {
+      const result = transform(transformer, '30');
+      // Group 1 complete (2 digits), shows trailing separator
+      expect(result?.value).toBe('+49 30 ');
+    });
+
+    it('formats partial Berlin number with digits', () => {
+      const result = transform(transformer, '3012');
+      expect(result?.value).toBe('+49 30 12');
+    });
+
+    it('strips calling code 49 from input', () => {
+      const result = transform(transformer, '49301234567');
+      expect(result?.value).toBe('+49 30 1234567');
+    });
+  });
+
+  describe('United Kingdom (GB)', () => {
+    const transformer = new PhoneNumberTransformer({ country: 'GB' });
+
+    it('formats London number', () => {
+      const result = transform(transformer, '2012345678');
+      expect(result?.value).toBe('+44 20 1234 5678');
+    });
+
+    it('formats mobile number', () => {
+      const result = transform(transformer, '7911123456');
+      expect(result?.value).toBe('+44 7911 123456');
+    });
+  });
+
+  describe('Japan (JP)', () => {
+    const transformer = new PhoneNumberTransformer({ country: 'JP' });
+
+    it('formats Tokyo number', () => {
+      const result = transform(transformer, '312345678');
+      expect(result?.value).toBe('+81 3-1234-5678');
+    });
+  });
+
+  describe('France (FR)', () => {
+    const transformer = new PhoneNumberTransformer({ country: 'FR' });
+
+    it('formats standard number', () => {
+      const result = transform(transformer, '123456789');
+      expect(result?.value).toBe('+33 1 23 45 67 89');
+    });
+  });
+
+  describe('country switching', () => {
+    it('creates different transformers for different countries', () => {
+      const us = new PhoneNumberTransformer({ country: 'US' });
+      const de = new PhoneNumberTransformer({ country: 'DE' });
+
+      const usResult = transform(us, '5551234567');
+      const deResult = transform(de, '301234567');
+
+      expect(usResult?.value).toBe('+1 (555) 123-4567');
+      expect(deResult?.value).toBe('+49 30 1234567');
     });
   });
 });

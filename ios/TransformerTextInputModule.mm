@@ -1,7 +1,7 @@
 #import "TransformerTextInputModule.h"
 
 #import <jsi/jsi.h>
-#import <rnworklets/worklets/apple/WorkletsModule.h>
+#import <worklets/apple/WorkletsModule.h>
 
 #import "TransformerTextInputRuntime.h"
 

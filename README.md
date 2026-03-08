@@ -150,10 +150,6 @@ const phoneTransformer = new PhoneNumberTransformer({
 />
 ```
 
-## AI Disclosure
-
-Code in this repository is thought through and mostly written by humans, with AI used to improve clarity, consistency, and implementation details.
-
 ## Acknowledgments
 
 - [react-native-live-markdown](https://github.com/Expensify/react-native-live-markdown) and [react-native-advanced-input-mask](https://github.com/IvanIhnatsiuk/react-native-advanced-input-mask) for examples of how to extend TextInput.

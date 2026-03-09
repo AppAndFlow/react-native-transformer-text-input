@@ -8,6 +8,13 @@ export type PhoneNumberTransformerOptions = {
    */
   country?: string;
   /**
+   * When false, the output only contains the formatted national number
+   * (without the "+{callingCode} " prefix). Useful when the calling code
+   * is displayed separately (e.g., in a flag button).
+   * @default true
+   */
+  includeCallingCode?: boolean;
+  /**
    * Enable debug logging for transformer operations.
    * @default false
    */
@@ -246,6 +253,7 @@ const mapCursorToFormatted = (
 export class PhoneNumberTransformer extends Transformer {
   constructor({
     country = 'US',
+    includeCallingCode = true,
     debug = false,
   }: PhoneNumberTransformerOptions = {}) {
     const countryData = COUNTRY_PHONE_DATA[country];
@@ -258,6 +266,11 @@ export class PhoneNumberTransformer extends Transformer {
     const callingCode = countryData.callingCode;
     const formats = countryData.formats;
     const prefix = '+' + callingCode + ' ';
+    // Pre-compute these outside the worklet so only simple string/number
+    // values are captured in the closure (more reliable across worklet runtimes).
+    const outputPrefix = includeCallingCode ? prefix : '';
+    const outputPrefixLen = outputPrefix.length;
+    const codeToStrip = includeCallingCode ? callingCode : '';
 
     const worklet = (input: {
       value: string;
@@ -273,45 +286,52 @@ export class PhoneNumberTransformer extends Transformer {
       const allDigits = extractDigits(value);
       const prevAllDigits = extractDigits(previousValue);
 
-      // Strip calling code from front to get national digits
-      let nationalDigits: string;
-      let strippedCallingCode = false;
-      if (allDigits.startsWith(callingCode)) {
-        nationalDigits = allDigits.slice(callingCode.length);
-        strippedCallingCode = true;
-      } else {
-        nationalDigits = allDigits;
-      }
-
-      let prevNationalDigits: string;
-      if (prevAllDigits.startsWith(callingCode)) {
-        prevNationalDigits = prevAllDigits.slice(callingCode.length);
-      } else {
-        prevNationalDigits = prevAllDigits;
-      }
-
-      // Special case: only calling code digits remain
-      if (nationalDigits.length === 0 && strippedCallingCode) {
-        if (value.length < previousValue.length) {
-          // Deleting — clear everything
-          return { value: '', selection: { start: 0, end: 0 } };
-        }
-        // Show prefix
-        return {
-          value: prefix,
-          selection: { start: prefix.length, end: prefix.length },
-        };
-      }
-
       // Handle completely empty
       if (allDigits.length === 0) {
         return { value: '', selection: { start: 0, end: 0 } };
       }
 
+      let nationalDigits: string;
+      let prevNationalDigits: string;
+      let strippedCallingCode = false;
+
+      if (codeToStrip.length > 0) {
+        // Strip calling code from front to get national digits
+        if (allDigits.startsWith(codeToStrip)) {
+          nationalDigits = allDigits.slice(codeToStrip.length);
+          strippedCallingCode = true;
+        } else {
+          nationalDigits = allDigits;
+        }
+
+        if (prevAllDigits.startsWith(codeToStrip)) {
+          prevNationalDigits = prevAllDigits.slice(codeToStrip.length);
+        } else {
+          prevNationalDigits = prevAllDigits;
+        }
+
+        // Special case: only calling code digits remain
+        if (nationalDigits.length === 0 && strippedCallingCode) {
+          if (value.length < previousValue.length) {
+            // Deleting — clear everything
+            return { value: '', selection: { start: 0, end: 0 } };
+          }
+          // Show prefix
+          return {
+            value: outputPrefix,
+            selection: { start: outputPrefixLen, end: outputPrefixLen },
+          };
+        }
+      } else {
+        // National-only mode: all digits are national, no calling code handling
+        nationalDigits = allDigits;
+        prevNationalDigits = prevAllDigits;
+      }
+
       // Calculate digit positions for cursor mapping
       const digitsBeforeStart = countDigitsBefore(value, selection.start);
       const digitsBeforeEnd = countDigitsBefore(value, selection.end);
-      const callingCodeLen = strippedCallingCode ? callingCode.length : 0;
+      const callingCodeLen = strippedCallingCode ? codeToStrip.length : 0;
       const adjustedStart = Math.max(0, digitsBeforeStart - callingCodeLen);
       const adjustedEnd = Math.max(0, digitsBeforeEnd - callingCodeLen);
 
@@ -336,15 +356,15 @@ export class PhoneNumberTransformer extends Transformer {
       // Select format based on leading digits
       const format = selectFormat(nationalDigits, formats);
       if (!format) {
-        // No format available — just show digits with prefix
-        const result = prefix + nationalDigits;
-        const pos = prefix.length + finalStart;
+        // No format available — just show digits
+        const result = outputPrefix + nationalDigits;
+        const pos = outputPrefixLen + finalStart;
         return { value: result, selection: { start: pos, end: pos } };
       }
 
       // Apply the selected format
       const formatted = applyFormat(nationalDigits, format);
-      const result = prefix + formatted;
+      const result = outputPrefix + formatted;
 
       // Map cursor position
       const cursorAtEnd = selection.end >= value.length;
@@ -376,8 +396,9 @@ export class PhoneNumberTransformer extends Transformer {
       // Map cursor through the formatted output
       // We need to find where digit N is in the formatted result
       const newStart =
-        prefix.length + mapCursorToFormatted(formatted, finalStart);
-      const newEnd = prefix.length + mapCursorToFormatted(formatted, finalEnd);
+        outputPrefixLen + mapCursorToFormatted(formatted, finalStart);
+      const newEnd =
+        outputPrefixLen + mapCursorToFormatted(formatted, finalEnd);
 
       return {
         value: result,

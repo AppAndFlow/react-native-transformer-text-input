@@ -61,12 +61,33 @@ export type TransformerTextInputProps = Omit<TextInputProps, 'value'> & {
 
 export const TransformerTextInput = forwardRef(
   (
-    { transformer, onChangeText, ...others }: TransformerTextInputProps,
+    {
+      transformer,
+      onChangeText,
+      defaultValue,
+      ...others
+    }: TransformerTextInputProps,
     forwardedRef: Ref<TransformerTextInputInstance>,
   ) => {
     const transformerId = useMemo(() => {
       return registerTransformer(transformer);
     }, [transformer]);
+
+    // Pre-transform defaultValue on the JS thread so Yoga measures the correct
+    // text from the start. Without this the native-side transformation happens
+    // after layout and doesn't trigger a remeasure.
+    const transformedDefaultValue = useMemo(() => {
+      if (defaultValue == null) {
+        return undefined;
+      }
+      const result = transformer.worklet({
+        value: defaultValue,
+        previousValue: '',
+        selection: { start: defaultValue.length, end: defaultValue.length },
+        previousSelection: { start: 0, end: 0 },
+      });
+      return result?.value ?? defaultValue;
+    }, [defaultValue, transformer]);
 
     useEffect(() => {
       return () => {
@@ -135,6 +156,7 @@ export const TransformerTextInput = forwardRef(
           // @ts-expect-error
           ref={inputRef}
           onChangeText={handleChangeText}
+          defaultValue={transformedDefaultValue}
           {...others}
         />
       </TransformerTextInputDecoratorViewNativeComponent>

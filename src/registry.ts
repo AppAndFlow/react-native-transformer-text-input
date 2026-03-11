@@ -1,4 +1,4 @@
-import { runOnUI } from 'react-native-worklets';
+import { runOnUI, executeOnUIRuntimeSync } from 'react-native-worklets';
 import NativeTransformerTextInputModule from './NativeTransformerTextInputModule';
 import { type Selection, type Transformer } from './Transformer';
 import { computeUncontrolledSelection, validateSelection } from './selection';
@@ -29,8 +29,9 @@ function initializeIfNeeded() {
     return;
   }
 
-  // Important that `runOnUI` is called first to make sure the UI runtime is initialized.
-  runOnUI(() => {
+  // Set up registry on UI runtime synchronously so it is guaranteed to exist
+  // when native code accesses it after install().
+  executeOnUIRuntimeSync(() => {
     'worklet';
 
     const transformersMap = new Map<number, TransformerWrapper>();

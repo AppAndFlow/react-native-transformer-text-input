@@ -82,7 +82,7 @@ export const TransformerTextInput = forwardRef(
       }
       const result = transformer.worklet({
         value: defaultValue,
-        previousValue: '',
+        previousValue: defaultValue,
         selection: { start: defaultValue.length, end: defaultValue.length },
         previousSelection: { start: 0, end: 0 },
       });

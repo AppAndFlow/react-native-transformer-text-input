@@ -1,6 +1,22 @@
-# React Native Transformer Text Input
+<img width="100%" height="autp" alt="react-native-transformer-input by App&Flow" src="https://github.com/user-attachments/assets/994aa73e-2db6-434c-bdd5-3069658e7c2c" />
+
 
 TextInput component that allows transforming text synchronously with a worklet.
+
+
+## About
+App & Flow is a Montreal-based React Native engineering and consulting studio. We partner with the world’s top companies and are recommended by [Expo](https://expo.dev/consultants). Need a hand? Let’s build together. team@appandflow.com
+
+## Demo
+
+
+
+https://github.com/user-attachments/assets/b22041b2-f5c1-4b2a-9fd0-960d7f5b3cf9
+
+
+
+
+
 
 ## Motivation
 

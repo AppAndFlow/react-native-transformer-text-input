@@ -4,7 +4,8 @@
     "paths": {
       "react-native-transformer-text-input": ["./src/index"],
       "react-native-transformer-text-input/formatters/phone-number": ["./src/formatters/phone-number"],
-      "react-native-transformer-text-input/formatters/pattern": ["./src/formatters/pattern"]
+      "react-native-transformer-text-input/formatters/pattern": ["./src/formatters/pattern"],
+      "react-native-transformer-text-input/formatters/currency": ["./src/formatters/currency"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

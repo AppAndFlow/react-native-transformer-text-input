@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -23,6 +23,7 @@ import {
 } from 'react-native-transformer-text-input';
 import { PhoneNumberTransformer } from 'react-native-transformer-text-input/formatters/phone-number';
 import { PatternTransformer } from 'react-native-transformer-text-input/formatters/pattern';
+import { CurrencyTransformer } from 'react-native-transformer-text-input/formatters/currency';
 
 const usernameTransformer = new Transformer(({ value }) => {
   'worklet';
@@ -42,6 +43,20 @@ const creditCardTransformer = new PatternTransformer({
 const dateTransformer = new PatternTransformer({
   pattern: '##/##/####',
 });
+
+type CurrencyCode = 'USD' | 'EUR' | 'JPY';
+
+const CURRENCIES: { code: CurrencyCode; label: string }[] = [
+  { code: 'USD', label: 'USD' },
+  { code: 'EUR', label: 'EUR' },
+  { code: 'JPY', label: 'JPY' },
+];
+
+const currencyTransformers: Record<CurrencyCode, CurrencyTransformer> = {
+  USD: new CurrencyTransformer({ currency: 'USD', locale: 'en-US' }),
+  EUR: new CurrencyTransformer({ currency: 'EUR', locale: 'de-DE' }),
+  JPY: new CurrencyTransformer({ currency: 'JPY', locale: 'ja-JP' }),
+};
 
 type ExampleCardProps = {
   title: string;
@@ -87,6 +102,89 @@ function ExampleCard({
         autoCorrect={false}
         style={styles.input}
         {...inputProps}
+      />
+      <View style={styles.buttonRow}>
+        <TouchableOpacity style={styles.button} onPress={handleSetValue}>
+          <Text style={styles.buttonText}>Set Example</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleClear}>
+          <Text style={styles.buttonText}>Clear</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleShowValue}>
+          <Text style={styles.buttonText}>Show</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+function CurrencyExampleCard() {
+  const inputRef = useRef<TransformerTextInputInstance>(null);
+  const [currency, setCurrency] = useState<CurrencyCode>('USD');
+
+  // Re-run the transformer on the existing value whenever the currency
+  // changes, so the displayed amount reformats in the new locale/symbol.
+  useEffect(() => {
+    const current = inputRef.current?.getValue() ?? '';
+    if (!current) return;
+    inputRef.current?.update({
+      value: current,
+      selection: { start: current.length, end: current.length },
+      transform: true,
+    });
+  }, [currency]);
+
+  const handleSetValue = () => {
+    inputRef.current?.update({ value: '1234567', transform: true });
+  };
+
+  const handleClear = () => {
+    inputRef.current?.clear();
+  };
+
+  const handleShowValue = () => {
+    const value = inputRef.current?.getValue() || '(empty)';
+    Alert.alert('Current Value', value);
+  };
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>Currency</Text>
+      <Text style={styles.cardDescription}>
+        Cents-focused input formatted via Intl.NumberFormat
+      </Text>
+      <View style={styles.currencyPicker}>
+        {CURRENCIES.map((c) => {
+          const selected = c.code === currency;
+          return (
+            <TouchableOpacity
+              key={c.code}
+              style={[
+                styles.currencyButton,
+                selected && styles.currencyButtonSelected,
+              ]}
+              onPress={() => setCurrency(c.code)}
+            >
+              <Text
+                style={[
+                  styles.currencyButtonText,
+                  selected && styles.currencyButtonTextSelected,
+                ]}
+              >
+                {c.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <TransformerTextInput
+        ref={inputRef}
+        transformer={currencyTransformers[currency]}
+        placeholder="0"
+        placeholderTextColor="#999"
+        autoCorrect={false}
+        keyboardType="number-pad"
+        style={styles.input}
       />
       <View style={styles.buttonRow}>
         <TouchableOpacity style={styles.button} onPress={handleSetValue}>
@@ -153,6 +251,8 @@ function AppContent() {
         exampleValue="12252024"
         inputProps={{ keyboardType: 'number-pad' }}
       />
+
+      <CurrencyExampleCard />
     </KeyboardAwareScrollView>
   );
 }
@@ -237,5 +337,31 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '500',
+  },
+  currencyPicker: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  currencyButton: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    backgroundColor: '#f8f8f8',
+    alignItems: 'center',
+  },
+  currencyButtonSelected: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  currencyButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#333',
+  },
+  currencyButtonTextSelected: {
+    color: '#fff',
   },
 });

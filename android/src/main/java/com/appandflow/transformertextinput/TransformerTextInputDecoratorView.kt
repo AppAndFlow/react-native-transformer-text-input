@@ -51,8 +51,38 @@ class TransformerTextInputDecoratorView(
   ) ?: state
 
   fun setTransformerId(newTransformerId: Int) {
+    val previousTransformerId = transformerId
     transformerId = newTransformerId
     lastEventValue = null
+    // When the transformer is swapped after mount, re-run it on the current
+    // text so the displayed value reformats immediately. The initial prop
+    // set is excluded by checking that the previous id was non-zero
+    // (default) and that the backing edit text is attached.
+    if (previousTransformerId != 0 &&
+      previousTransformerId != newTransformerId &&
+      reactEditText != null
+    ) {
+      reapplyTransformer()
+    }
+  }
+
+  private fun reapplyTransformer() {
+    val currentValue = currentValue()
+    val currentSelection = currentSelection()
+    val current = TextState(currentValue, currentSelection)
+    val next = transformTextState(current, true)
+    if (next.value == currentValue && next.selection == currentSelection) {
+      return
+    }
+    isUpdating = true
+    try {
+      if (next.value != currentValue) {
+        applyValue(next.value)
+      }
+      applySelection(next.selection)
+    } finally {
+      isUpdating = false
+    }
   }
 
   override fun onAttachedToWindow() {

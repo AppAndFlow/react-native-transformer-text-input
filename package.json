@@ -20,6 +20,11 @@
       "types": "./lib/typescript/src/formatters/pattern.d.ts",
       "default": "./lib/module/formatters/pattern.js"
     },
+    "./formatters/currency": {
+      "source": "./src/formatters/currency.ts",
+      "types": "./lib/typescript/src/formatters/currency.d.ts",
+      "default": "./lib/module/formatters/currency.js"
+    },
     "./formatters/phone-data": {
       "source": "./src/formatters/phone-data.ts",
       "types": "./lib/typescript/src/formatters/phone-data.d.ts",

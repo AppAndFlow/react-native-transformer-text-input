@@ -50,11 +50,39 @@ struct RNTTITextState {
   const auto &oldViewProps = *std::static_pointer_cast<TransformerTextInputDecoratorViewProps const>(_props);
   const auto &newViewProps = *std::static_pointer_cast<TransformerTextInputDecoratorViewProps const>(props);
 
-  if (oldViewProps.transformerId != newViewProps.transformerId) {
+  bool transformerIdChanged = oldViewProps.transformerId != newViewProps.transformerId;
+  if (transformerIdChanged) {
     _transformer = rntti::LookupTransformer(newViewProps.transformerId);
   }
 
   [super updateProps:props oldProps:oldProps];
+
+  // When the transformer is swapped after mount, re-run it on the current
+  // text so the displayed value reformats immediately. The initial prop set
+  // is excluded by checking that the previous id was non-zero (default) and
+  // that the backing text input is attached.
+  if (transformerIdChanged && oldViewProps.transformerId != 0 && _backedTextInput != nil) {
+    [self reapplyTransformer];
+  }
+}
+
+- (void)reapplyTransformer
+{
+  NSString *currentValue = [self currentValue];
+  NSRange currentSelection = [self currentSelection];
+  RNTTITextState current{currentValue, currentSelection};
+  RNTTITextState next = [self transformTextState:current transform:YES];
+  bool didTransformValue = ![next.value isEqualToString:currentValue];
+  if (!didTransformValue && NSEqualRanges(next.selection, currentSelection)) {
+    return;
+  }
+  if (didTransformValue) {
+    [self applyValue:next.value];
+  }
+  [self applySelection:next.selection];
+  if (didTransformValue) {
+    [_baseDelegate textInputDidChange];
+  }
 }
 
 - (void)applyValue:(NSString *)newValue

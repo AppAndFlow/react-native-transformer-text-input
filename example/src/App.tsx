@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -121,18 +121,6 @@ function ExampleCard({
 function CurrencyExampleCard() {
   const inputRef = useRef<TransformerTextInputInstance>(null);
   const [currency, setCurrency] = useState<CurrencyCode>('USD');
-
-  // Re-run the transformer on the existing value whenever the currency
-  // changes, so the displayed amount reformats in the new locale/symbol.
-  useEffect(() => {
-    const current = inputRef.current?.getValue() ?? '';
-    if (!current) return;
-    inputRef.current?.update({
-      value: current,
-      selection: { start: current.length, end: current.length },
-      transform: true,
-    });
-  }, [currency]);
 
   const handleSetValue = () => {
     inputRef.current?.update({ value: '1234567', transform: true });

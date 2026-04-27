@@ -2685,7 +2685,7 @@ PODS:
     - RNWorklets
     - SocketRocket
     - Yoga
-  - RNTransformerTextInput (0.1.0-alpha.0):
+  - RNTransformerTextInput (0.1.0-alpha.5):
     - boost
     - DoubleConversion
     - fast_float
@@ -2887,7 +2887,7 @@ DEPENDENCIES:
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNTransformerTextInput (from `../..`)
-  - RNWorklets (from `../../node_modules/react-native-worklets`)
+  - RNWorklets (from `../node_modules/react-native-worklets`)
   - SocketRocket (~> 0.7.1)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -3058,7 +3058,7 @@ EXTERNAL SOURCES:
   RNTransformerTextInput:
     :path: "../.."
   RNWorklets:
-    :path: "../../node_modules/react-native-worklets"
+    :path: "../node_modules/react-native-worklets"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
@@ -3142,8 +3142,8 @@ SPEC CHECKSUMS:
   ReactCodegen: 11c08ff43a62009d48c71de000352e4515918801
   ReactCommon: 424cc34cf5055d69a3dcf02f3436481afb8b0f6f
   RNReanimated: 292cd58688552a22b3fc1cefcfbc49b336dfed68
-  RNTransformerTextInput: e409eccf5b0b44568d3fe57d9c44c24c88513b63
-  RNWorklets: 0b3da02daae10c424dbe4201d63d31405fa80e2b
+  RNTransformerTextInput: 11b8f78bf174b8da18bb23d4dd04cd7371254104
+  RNWorklets: 69f7239afaf3a156f7f9549eeb0ae8d02adc095f
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 6ca93c8c13f56baeec55eb608577619b17a4d64e
 

@@ -34,6 +34,25 @@ if(NOT DEFINED REACT_NATIVE_WORKLETS_DIR OR "${REACT_NATIVE_WORKLETS_DIR}" STREQ
   get_filename_component(REACT_NATIVE_WORKLETS_DIR "${_worklets_pkg_json}" DIRECTORY)
 endif()
 
+# Resolve React Native minor version so worklets headers pick the correct
+# JSBigStringBuffer alias (deprecated on RN >= 0.84).
+if(NOT DEFINED REACT_NATIVE_MINOR_VERSION)
+  execute_process(
+    COMMAND "${NODE_BINARY}" -p "require('react-native/package.json').version.split('.')[1]"
+    WORKING_DIRECTORY "${PROJECT_ROOT_DIR}/.."
+    OUTPUT_VARIABLE REACT_NATIVE_MINOR_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    RESULT_VARIABLE _rn_minor_res
+    ERROR_QUIET
+  )
+  if(NOT _rn_minor_res EQUAL 0 OR "${REACT_NATIVE_MINOR_VERSION}" STREQUAL "")
+    message(FATAL_ERROR
+      "Failed to resolve React Native minor version with Node from '${PROJECT_ROOT_DIR}/..'. "
+      "Set REACT_NATIVE_MINOR_VERSION or NODE_BINARY explicitly."
+    )
+  endif()
+endif()
+
 file(GLOB LIB_CUSTOM_SRCS CONFIGURE_DEPENDS *.cpp ${LIB_COMMON_DIR}/*.cpp)
 file(GLOB LIB_CODEGEN_SRCS CONFIGURE_DEPENDS ${LIB_ANDROID_GENERATED_JNI_DIR}/*.cpp ${LIB_ANDROID_GENERATED_COMPONENTS_DIR}/*.cpp)
 
@@ -84,6 +103,12 @@ target_include_directories(
   ${CMAKE_PROJECT_NAME}
   PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_compile_definitions(
+  ${LIB_TARGET_NAME}
+  PRIVATE
+  REACT_NATIVE_MINOR_VERSION=${REACT_NATIVE_MINOR_VERSION}
 )
 
 target_compile_reactnative_options(${LIB_TARGET_NAME} PUBLIC)

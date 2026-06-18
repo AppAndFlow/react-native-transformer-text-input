@@ -199,6 +199,17 @@ function generate(): string {
   lines.push('];');
   lines.push('');
 
+  // Calling code -> ISO country codes (primary country first). Used to detect
+  // the country from a typed international calling code.
+  lines.push(
+    'export const COUNTRY_CALLING_CODES: Record<string, string[]> = {',
+  );
+  for (const [code, isos] of Object.entries(callingCodes)) {
+    lines.push(`  ${JSON.stringify(code)}: ${JSON.stringify(isos)},`);
+  }
+  lines.push('};');
+  lines.push('');
+
   return lines.join('\n');
 }
 

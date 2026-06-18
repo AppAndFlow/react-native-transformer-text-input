@@ -1,4 +1,4 @@
-import { PhoneNumberTransformer } from '../phone-number';
+import { PhoneNumberTransformer, detectCountry } from '../phone-number';
 
 // Helper to call the transformer worklet with simpler API
 const transform = (
@@ -332,6 +332,52 @@ describe('PhoneNumberTransformer', () => {
 
       expect(usResult?.value).toBe('+1 (555) 123-4567');
       expect(deResult?.value).toBe('+49 30 1234567');
+    });
+  });
+
+  describe('international mode', () => {
+    const intl = new PhoneNumberTransformer({ international: true });
+
+    it('formats a US number typed with +1', () => {
+      expect(transform(intl, '+14155552671')?.value).toBe('+1 (415) 555-2671');
+    });
+
+    it('switches to French formatting when +33 is typed', () => {
+      expect(transform(intl, '+33612345678')?.value).toBe('+33 6 12 34 56 78');
+    });
+
+    it('keeps a French trunk 0 when typed in full', () => {
+      expect(transform(intl, '+330612345678')?.value).toBe(
+        '+33 06 12 34 56 78',
+      );
+    });
+
+    it('switches to UK formatting when +44 is typed', () => {
+      expect(transform(intl, '+447911123456')?.value).toBe('+44 7911 123456');
+    });
+
+    it('shows just the calling code while it is the only thing typed', () => {
+      expect(transform(intl, '+44')?.value).toBe('+44');
+    });
+
+    it('ignores the `country` option and follows the typed code', () => {
+      const intlUs = new PhoneNumberTransformer({
+        international: true,
+        country: 'US',
+      });
+      expect(transform(intlUs, '+447911123456')?.value).toBe('+44 7911 123456');
+    });
+  });
+
+  describe('detectCountry', () => {
+    it('resolves the primary country from the calling code', () => {
+      expect(detectCountry('+1 415 555 2671')).toBe('US');
+      expect(detectCountry('+44 7911 123456')).toBe('GB');
+      expect(detectCountry('+33 6 12 34 56 78')).toBe('FR');
+    });
+
+    it('returns undefined when no calling code is recognized', () => {
+      expect(detectCountry('')).toBeUndefined();
     });
   });
 });

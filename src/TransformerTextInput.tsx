@@ -7,57 +7,24 @@ import {
   type ElementRef,
   type Ref,
 } from 'react';
-import {
-  StyleSheet,
-  TextInput,
-  type HostInstance,
-  type TextInputProps,
-} from 'react-native';
-import { type Selection, type Transformer } from './Transformer';
+import { StyleSheet, TextInput, type HostInstance } from 'react-native';
+import { type Selection } from './Transformer';
 import TransformerTextInputDecoratorViewNativeComponent, {
   Commands,
 } from './TransformerTextInputDecoratorViewNativeComponent';
 import { registerTransformer, unregisterTransformer } from './registry';
 import useMergeRefs from './utils/useMergeRefs';
 import { validateSelection } from './selection';
+import {
+  type TransformerTextInputInstance,
+  type TransformerTextInputInstanceMethods,
+  type TransformerTextInputProps,
+} from './TransformerTextInput.types';
 
-type TransformerTextInputInstanceMethods = {
-  /**
-   * Get the current text value.
-   */
-  getValue: () => string;
-  /**
-   * Update the value and/or selection, optionally running the transformer.
-   */
-  update: (options: {
-    /**
-     * New value to apply.
-     */
-    value?: string | null;
-    /**
-     * Optional selection to apply alongside the value.
-     */
-    selection?: { start: number; end: number };
-    /**
-     * Whether to run the transformer on update. Defaults to true.
-     */
-    transform?: boolean;
-  }) => void;
-  /**
-   * Clear the input value without running the transformer.
-   */
-  clear: () => void;
-};
-
-export type TransformerTextInputInstance = HostInstance &
-  TransformerTextInputInstanceMethods;
-
-export type TransformerTextInputProps = Omit<TextInputProps, 'value'> & {
-  /**
-   * Transformer instance used to sync text changes on the UI thread.
-   */
-  transformer: Transformer;
-};
+export type {
+  TransformerTextInputInstance,
+  TransformerTextInputProps,
+} from './TransformerTextInput.types';
 
 export const TransformerTextInput = forwardRef(
   (

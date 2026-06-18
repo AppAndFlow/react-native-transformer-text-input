@@ -1,4 +1,15 @@
 {
   "name": "TransformerInputExample",
-  "displayName": "TransformerInputExample"
+  "displayName": "TransformerInputExample",
+  "expo": {
+    "name": "TransformerInputExample",
+    "slug": "transformer-input-example",
+    "scheme": "transformer-input-example",
+    "platforms": ["ios", "android", "web"],
+    "plugins": ["expo-router"],
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    }
+  }
 }

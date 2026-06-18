@@ -9,12 +9,12 @@ set(LIB_COMMON_DIR ${LIB_ANDROID_DIR}/../cpp)
 set(LIB_ANDROID_GENERATED_JNI_DIR ${LIB_ANDROID_DIR}/build/generated/source/codegen/jni)
 set(LIB_ANDROID_GENERATED_COMPONENTS_DIR ${LIB_ANDROID_GENERATED_JNI_DIR}/react/renderer/components/${LIB_LITERAL})
 
+set(NODE_BINARY "node" CACHE STRING "Path to Node.js binary")
+
 # Resolve path to react-native-worklets.
 set(REACT_NATIVE_WORKLETS_DIR "" CACHE PATH "Path to react-native-worklets root directory")
 
 if(NOT DEFINED REACT_NATIVE_WORKLETS_DIR OR "${REACT_NATIVE_WORKLETS_DIR}" STREQUAL "")
-  set(NODE_BINARY "node" CACHE STRING "Path to Node.js binary")
-
   execute_process(
     COMMAND "${NODE_BINARY}" -p "require.resolve('react-native-worklets/package.json')"
     WORKING_DIRECTORY "${PROJECT_ROOT_DIR}/.."

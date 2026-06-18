@@ -155,7 +155,7 @@ Formats phone numbers as the user types.
 import { PhoneNumberTransformer } from 'react-native-transformer-text-input/formatters/phone-number';
 
 const phoneTransformer = new PhoneNumberTransformer({
-  country: 'US',           // Only 'US' supported currently
+  country: 'US',
   debug: false,            // Enable debug logging (default: false)
 });
 

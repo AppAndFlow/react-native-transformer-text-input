@@ -267,6 +267,61 @@ describe('PhoneNumberTransformer', () => {
     });
   });
 
+  describe('national trunk prefix', () => {
+    const fr = new PhoneNumberTransformer({
+      country: 'FR',
+      includeCallingCode: false,
+    });
+    const gb = new PhoneNumberTransformer({
+      country: 'GB',
+      includeCallingCode: false,
+    });
+    const jp = new PhoneNumberTransformer({
+      country: 'JP',
+      includeCallingCode: false,
+    });
+    const au = new PhoneNumberTransformer({
+      country: 'AU',
+      includeCallingCode: false,
+    });
+    const us = new PhoneNumberTransformer({
+      country: 'US',
+      includeCallingCode: false,
+    });
+
+    it('formats a French mobile typed with the leading 0', () => {
+      expect(transform(fr, '0612345678')?.value).toBe('06 12 34 56 78');
+    });
+
+    it('formats a French landline typed with the leading 0', () => {
+      expect(transform(fr, '0123456789')?.value).toBe('01 23 45 67 89');
+    });
+
+    it('formats a UK mobile typed with the leading 0', () => {
+      expect(transform(gb, '07911123456')?.value).toBe('07911 123456');
+    });
+
+    it('formats a UK London number typed with the leading 0', () => {
+      expect(transform(gb, '02012345678')?.value).toBe('020 1234 5678');
+    });
+
+    it('formats a Japanese number typed with the leading 0', () => {
+      expect(transform(jp, '0312345678')?.value).toBe('03-1234-5678');
+    });
+
+    it('formats an Australian mobile typed with the leading 0', () => {
+      expect(transform(au, '0412345678')?.value).toBe('0412 345 678');
+    });
+
+    it('still formats the significant number when no trunk prefix is typed', () => {
+      expect(transform(fr, '612345678')?.value).toBe('6 12 34 56 78');
+    });
+
+    it('does not treat a leading 1 as a trunk prefix for US', () => {
+      expect(transform(us, '4155552671')?.value).toBe('(415) 555-2671');
+    });
+  });
+
   describe('country switching', () => {
     it('creates different transformers for different countries', () => {
       const us = new PhoneNumberTransformer({ country: 'US' });

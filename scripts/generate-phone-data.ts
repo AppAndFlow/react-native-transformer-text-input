@@ -52,20 +52,31 @@ interface CountryPhoneData {
   code: string;
   callingCode: string;
   formats: PhoneFormat[];
+  nationalPrefix?: string;
   name: string;
   flag: string;
 }
 
 function processCountry(code: string, data: MetadataCountry): CountryPhoneData {
   const callingCode = data[0];
+  const nationalPrefix = data[5];
   const rawFormats = Array.isArray(data[4]) ? data[4] : [];
 
+  // A format's national prefix formatting rule (e.g. "0$1") means the national
+  // prefix is part of how the number is displayed. We only carry the prefix for
+  // countries that display it, so e.g. US/CA (prefix "1", no rule) keep their
+  // bare-number formatting.
+  let usesNationalPrefix = false;
   const formats: PhoneFormat[] = rawFormats.map((f) => {
     const leadingDigitsArray = f[2];
     // Use the last (most specific) leading digits pattern
     const leadingDigits = leadingDigitsArray
       ? leadingDigitsArray[leadingDigitsArray.length - 1]
       : undefined;
+
+    if (f[3]) {
+      usesNationalPrefix = true;
+    }
 
     return {
       pattern: f[0],
@@ -78,6 +89,11 @@ function processCountry(code: string, data: MetadataCountry): CountryPhoneData {
     code,
     callingCode,
     formats,
+    ...(usesNationalPrefix &&
+    typeof nationalPrefix === 'string' &&
+    nationalPrefix.length > 0
+      ? { nationalPrefix }
+      : {}),
     name: getCountryName(code),
     flag: countryCodeToFlag(code),
   };
@@ -107,6 +123,10 @@ function generate(): string {
         const mainCountry = mainCountries[0]!;
         if (mainCountry !== code && allData[mainCountry]) {
           allData[code]!.formats = allData[mainCountry]!.formats;
+          if (allData[mainCountry]!.nationalPrefix) {
+            allData[code]!.nationalPrefix =
+              allData[mainCountry]!.nationalPrefix;
+          }
         }
       }
     }
@@ -131,6 +151,7 @@ function generate(): string {
   lines.push('  code: string;');
   lines.push('  callingCode: string;');
   lines.push('  formats: PhoneFormat[];');
+  lines.push('  nationalPrefix?: string;');
   lines.push('  name: string;');
   lines.push('  flag: string;');
   lines.push('};');
@@ -154,12 +175,15 @@ function generate(): string {
       })
       .join(', ');
 
+    const nationalPrefixStr = data.nationalPrefix
+      ? `, nationalPrefix: ${JSON.stringify(data.nationalPrefix)}`
+      : '';
     lines.push(
       `  ${JSON.stringify(code)}: { code: ${JSON.stringify(
         data.code,
       )}, callingCode: ${JSON.stringify(
         data.callingCode,
-      )}, formats: [${formatsStr}], name: ${JSON.stringify(
+      )}, formats: [${formatsStr}]${nationalPrefixStr}, name: ${JSON.stringify(
         data.name,
       )}, flag: ${JSON.stringify(data.flag)} },`,
     );

@@ -265,6 +265,8 @@ export class PhoneNumberTransformer extends Transformer {
 
     const callingCode = countryData.callingCode;
     const formats = countryData.formats;
+    const nationalPrefix = countryData.nationalPrefix ?? '';
+    const nationalPrefixLen = nationalPrefix.length;
     const prefix = '+' + callingCode + ' ';
     // Pre-compute these outside the worklet so only simple string/number
     // values are captured in the closure (more reliable across worklet runtimes).
@@ -353,8 +355,22 @@ export class PhoneNumberTransformer extends Transformer {
         finalEnd = adjustedStart - 1;
       }
 
+      // Strip the national trunk prefix (e.g. "0") before selecting and applying
+      // a format — formats describe the national significant number — then
+      // re-add it so the displayed digits still line up with the input.
+      let significantDigits = nationalDigits;
+      let trunkPrefix = '';
+      if (
+        nationalPrefixLen > 0 &&
+        nationalDigits.length > nationalPrefixLen &&
+        nationalDigits.startsWith(nationalPrefix)
+      ) {
+        significantDigits = nationalDigits.slice(nationalPrefixLen);
+        trunkPrefix = nationalPrefix;
+      }
+
       // Select format based on leading digits
-      const format = selectFormat(nationalDigits, formats);
+      const format = selectFormat(significantDigits, formats);
       if (!format) {
         // No format available — just show digits
         const result = outputPrefix + nationalDigits;
@@ -363,7 +379,7 @@ export class PhoneNumberTransformer extends Transformer {
       }
 
       // Apply the selected format
-      const formatted = applyFormat(nationalDigits, format);
+      const formatted = trunkPrefix + applyFormat(significantDigits, format);
       const result = outputPrefix + formatted;
 
       // Map cursor position

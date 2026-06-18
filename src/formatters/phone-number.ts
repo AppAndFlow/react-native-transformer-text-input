@@ -1,5 +1,9 @@
 import { Transformer, type Selection } from '../Transformer';
-import { COUNTRY_PHONE_DATA, type PhoneFormat } from './phone-data';
+import {
+  COUNTRY_CALLING_CODES,
+  COUNTRY_PHONE_DATA,
+  type PhoneFormat,
+} from './phone-data';
 
 export type PhoneNumberTransformerOptions = {
   /**
@@ -15,11 +19,49 @@ export type PhoneNumberTransformerOptions = {
    */
   includeCallingCode?: boolean;
   /**
+   * International mode: the calling code is part of the editable text and the
+   * country is detected from it as you type (e.g. typing "+44" switches
+   * formatting to the UK). `country` is ignored in this mode. Use
+   * {@link detectCountry} to drive a flag/country indicator from the value.
+   * @default false
+   */
+  international?: boolean;
+  /**
    * Enable debug logging for transformer operations.
    * @default false
    */
   debug?: boolean;
 };
+
+// Longest calling-code prefix (1–3 digits) of `digits` that is a key of
+// `codes`. `codes` can be any calling-code-keyed record (the lookup table or
+// the per-code format index), so the worklet reuses its captured index.
+const matchCallingCode = (
+  digits: string,
+  codes: Record<string, unknown>,
+): string => {
+  'worklet';
+  const max = Math.min(3, digits.length);
+  for (let len = max; len >= 1; len--) {
+    if (codes[digits.slice(0, len)] !== undefined) {
+      return digits.slice(0, len);
+    }
+  }
+  return '';
+};
+
+/**
+ * Detect the ISO 3166-1 alpha-2 country for a phone value by its leading
+ * international calling code. Returns the primary country for the code (e.g.
+ * "US" for "+1"), or undefined if no calling code is recognized yet. Runs on
+ * the JS thread — use it to drive a flag/country indicator alongside an
+ * `international` PhoneNumberTransformer.
+ */
+export function detectCountry(value: string): string | undefined {
+  const digits = value.replace(/\D/g, '');
+  const code = matchCallingCode(digits, COUNTRY_CALLING_CODES);
+  return code ? COUNTRY_CALLING_CODES[code]?.[0] : undefined;
+}
 
 // Extract all digits from text
 const extractDigits = (text: string): string => {
@@ -254,8 +296,133 @@ export class PhoneNumberTransformer extends Transformer {
   constructor({
     country = 'US',
     includeCallingCode = true,
+    international = false,
     debug = false,
   }: PhoneNumberTransformerOptions = {}) {
+    if (international) {
+      // Per-calling-code formatting data (primary country for each code),
+      // captured once so the worklet can detect + format any country.
+      const callingCodeData: Record<
+        string,
+        { formats: PhoneFormat[]; nationalPrefix: string }
+      > = {};
+      for (const code in COUNTRY_CALLING_CODES) {
+        const primary = COUNTRY_CALLING_CODES[code]![0]!;
+        const d = COUNTRY_PHONE_DATA[primary];
+        if (d) {
+          callingCodeData[code] = {
+            formats: d.formats,
+            nationalPrefix: d.nationalPrefix ?? '',
+          };
+        }
+      }
+
+      const intlWorklet = (input: {
+        value: string;
+        previousValue: string;
+        selection: Selection;
+        previousSelection: Selection;
+      }) => {
+        'worklet';
+
+        const { value, selection, previousValue, previousSelection } = input;
+
+        const allDigits = extractDigits(value);
+        const prevAllDigits = extractDigits(previousValue);
+
+        if (allDigits.length === 0) {
+          return { value: '', selection: { start: 0, end: 0 } };
+        }
+
+        const digitsBeforeStart = countDigitsBefore(value, selection.start);
+        const digitsBeforeEnd = countDigitsBefore(value, selection.end);
+
+        // Backspacing a separator removes the digit before the caret instead,
+        // so deletion makes progress.
+        const isCaret = selection.start === selection.end;
+        const deletedFormattingChar =
+          isCaret &&
+          value.length < previousValue.length &&
+          allDigits.length === prevAllDigits.length &&
+          allDigits.length > 0;
+
+        let workingDigits = allDigits;
+        let finalStart = digitsBeforeStart;
+        let finalEnd = digitsBeforeEnd;
+        if (deletedFormattingChar && digitsBeforeStart > 0) {
+          workingDigits =
+            allDigits.slice(0, digitsBeforeStart - 1) +
+            allDigits.slice(digitsBeforeStart);
+          finalStart = digitsBeforeStart - 1;
+          finalEnd = finalStart;
+        }
+
+        const cursorAtEnd =
+          isCaret &&
+          selection.end >= value.length &&
+          previousSelection.end >= previousValue.length;
+
+        const callingCode = matchCallingCode(workingDigits, callingCodeData);
+
+        // No recognized calling code yet — show "+digits" as typed.
+        if (callingCode === '') {
+          const result = '+' + workingDigits;
+          if (cursorAtEnd) {
+            return {
+              value: result,
+              selection: { start: result.length, end: result.length },
+            };
+          }
+          // One leading "+" before the digits.
+          return {
+            value: result,
+            selection: { start: 1 + finalStart, end: 1 + finalEnd },
+          };
+        }
+
+        const data = callingCodeData[callingCode]!;
+        const nationalPrefix = data.nationalPrefix;
+        const nationalDigits = workingDigits.slice(callingCode.length);
+
+        let result: string;
+        if (nationalDigits.length === 0) {
+          result = '+' + callingCode;
+        } else {
+          let significantDigits = nationalDigits;
+          let trunkPrefix = '';
+          if (
+            nationalPrefix.length > 0 &&
+            nationalDigits.length > nationalPrefix.length &&
+            nationalDigits.startsWith(nationalPrefix)
+          ) {
+            significantDigits = nationalDigits.slice(nationalPrefix.length);
+            trunkPrefix = nationalPrefix;
+          }
+          const format = selectFormat(significantDigits, data.formats);
+          const formattedNational = format
+            ? trunkPrefix + applyFormat(significantDigits, format)
+            : nationalDigits;
+          result = '+' + callingCode + ' ' + formattedNational;
+        }
+
+        if (cursorAtEnd) {
+          return {
+            value: result,
+            selection: { start: result.length, end: result.length },
+          };
+        }
+
+        // result digits are [callingCode..., national...] in input order, so
+        // map the input digit counts straight onto the formatted output.
+        const newStart = mapCursorToFormatted(result, finalStart);
+        const newEnd = mapCursorToFormatted(result, finalEnd);
+        return { value: result, selection: { start: newStart, end: newEnd } };
+      };
+
+      super(intlWorklet);
+      return;
+    }
+
     const countryData = COUNTRY_PHONE_DATA[country];
     if (!countryData) {
       throw new Error(

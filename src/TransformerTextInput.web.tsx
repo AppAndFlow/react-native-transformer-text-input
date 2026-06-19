@@ -1,12 +1,4 @@
-import {
-  forwardRef,
-  useCallback,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type Ref,
-} from 'react';
+import { forwardRef, useCallback, useMemo, useRef, type Ref } from 'react';
 import { TextInput } from 'react-native';
 import { type Selection } from './Transformer';
 import { computeUncontrolledSelection, validateSelection } from './selection';
@@ -22,20 +14,22 @@ export type {
   TransformerTextInputProps,
 } from './TransformerTextInput.types';
 
-// The web host node is a DOM input; type only the caret bits we use so the
-// library's tsconfig doesn't need the `dom` lib.
+// The web host node is a DOM input; type only the bits we use so the library's
+// tsconfig doesn't need the `dom` lib.
 type WebInputNode = {
+  value: string;
   selectionStart: number | null;
   selectionEnd: number | null;
   setSelectionRange: (start: number, end: number) => void;
 };
 
 // Web implementation. There is no UI thread, so instead of the native decorator
-// running the transformer worklet on the UI runtime, we render a controlled
-// TextInput and run the same transformer synchronously in JS on every change.
-// Web is single-threaded, so the value and caret update in one commit — no
-// flicker. The caret is restored after the controlled value renders, since
-// setting `value` alone collapses it to the end.
+// running the transformer worklet on the UI runtime, we run the same transformer
+// synchronously in JS on every change. The input is uncontrolled: the formatted
+// value and caret are written straight to the DOM node in the change handler
+// (mirroring the native side's imperative update), so there's no React
+// re-render and no intermediate paint where the caret jumps to the end. Web is
+// single-threaded, so value and selection land together in one step.
 export const TransformerTextInput = forwardRef(
   (
     {
@@ -59,8 +53,6 @@ export const TransformerTextInput = forwardRef(
       return result?.value ?? defaultValue;
     }, [defaultValue, transformer]);
 
-    const [value, setValue] = useState(transformedDefaultValue);
-
     const valueRef = useRef(transformedDefaultValue);
     const previousRef = useRef<{ value: string; selection: Selection }>({
       value: transformedDefaultValue,
@@ -69,7 +61,6 @@ export const TransformerTextInput = forwardRef(
         end: transformedDefaultValue.length,
       },
     });
-    const pendingSelectionRef = useRef<Selection | null>(null);
     const nodeRef = useRef<WebInputNode | null>(null);
 
     const applyTransform = useCallback(
@@ -102,8 +93,14 @@ export const TransformerTextInput = forwardRef(
         }
         previousRef.current = { value: newValue, selection: newSelection };
         valueRef.current = newValue;
-        pendingSelectionRef.current = newSelection;
-        setValue(newValue);
+        // Write straight to the DOM node — uncontrolled, no React re-render.
+        const node = nodeRef.current;
+        if (node != null) {
+          node.value = newValue;
+          if (typeof node.setSelectionRange === 'function') {
+            node.setSelectionRange(newSelection.start, newSelection.end);
+          }
+        }
         return newValue;
       },
       [transformer],
@@ -151,24 +148,11 @@ export const TransformerTextInput = forwardRef(
 
     const inputRef = useMergeRefs(setInputRef, forwardedRef);
 
-    // Restore the post-transform caret after the controlled value commits.
-    useLayoutEffect(() => {
-      const pending = pendingSelectionRef.current;
-      if (pending == null) {
-        return;
-      }
-      pendingSelectionRef.current = null;
-      const node = nodeRef.current;
-      if (node != null && typeof node.setSelectionRange === 'function') {
-        node.setSelectionRange(pending.start, pending.end);
-      }
-    });
-
     return (
       <TextInput
         // @ts-expect-error web host node carries the instance methods
         ref={inputRef}
-        value={value}
+        defaultValue={transformedDefaultValue}
         onChangeText={handleChangeText}
         {...others}
       />

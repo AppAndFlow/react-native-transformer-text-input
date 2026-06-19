@@ -119,7 +119,7 @@ jobs:
     runs-on: macos-latest
 
     env:
-      XCODE_VERSION: 16.4
+      XCODE_VERSION: 26
       TURBO_CACHE_DIR: .turbo/ios
       RCT_USE_RN_DEP: 1
       RCT_USE_PREBUILT_RNCORE: 1
@@ -152,14 +152,6 @@ jobs:
         uses: maxim-lobanov/setup-xcode@60606e260d2fc5762a71e64e74b2174e8ea3c8bd # v1.6.0
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
-
-      - name: Install cocoapods
-        if: env.turbo_cache_hit != 1 && steps.cocoapods-cache.outputs.cache-hit != 'true'
-        run: |
-          cd example
-          bundle install
-          bundle exec pod repo update --verbose
-          bundle exec pod install --project-directory=ios
 
       - name: Build example for iOS
         run: |

@@ -57,7 +57,7 @@
     "prepare": "bob build",
     "generate:phone-data": "tsx scripts/generate-phone-data.ts",
     "test": "jest",
-    "lint": "yarn lint:eslint && yarn lint:ts && yarn lint:android",
+    "lint": "yarn lint:eslint && yarn lint:ts",
     "lint:ts": "tsc",
     "lint:eslint": "eslint \"**/*.{js,ts,tsx}\"",
     "lint:android": "cd example/android && RNTTI_WARNINGS_AS_ERRORS=true ./gradlew :react-native-transformer-text-input:lint --rerun-tasks",

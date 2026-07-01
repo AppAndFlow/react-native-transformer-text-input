@@ -34,6 +34,18 @@ const usernameTransformer = new Transformer(({ value }) => {
   return { value: result };
 });
 
+// Returns an out-of-bounds selection, which makes the library's selection
+// validation throw on every change. Typing in this input must log the error
+// instead of crashing the app.
+const throwingTransformer = new Transformer(({ value }) => {
+  'worklet';
+
+  return {
+    value,
+    selection: { start: value.length + 5, end: value.length + 5 },
+  };
+});
+
 const phoneNumberTransformer = new PhoneNumberTransformer();
 
 const creditCardTransformer = new PatternTransformer({
@@ -241,6 +253,15 @@ function AppContent() {
       />
 
       <CurrencyExampleCard />
+
+      <ExampleCard
+        title="Throwing Transformer"
+        description="Worklet throws on every change; errors are logged instead of crashing"
+        transformer={throwingTransformer}
+        placeholder="Type here, app should not crash"
+        exampleValue="hello"
+        inputProps={{ autoCapitalize: 'none' }}
+      />
     </KeyboardAwareScrollView>
   );
 }

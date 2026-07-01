@@ -4,6 +4,19 @@ namespace rntti {
 
 namespace {
 std::weak_ptr<worklets::WorkletRuntime> gUiRuntime;
+
+void LogTransformerError(jsi::Runtime &runtime, const std::string &message) {
+  try {
+    auto console = runtime.global().getPropertyAsObject(runtime, "console");
+    auto errorFunction = console.getPropertyAsFunction(runtime, "error");
+    errorFunction.call(
+        runtime,
+        jsi::String::createFromUtf8(
+            runtime, "[rntti] Transformer threw an error: " + message));
+  } catch (const jsi::JSIException &) {
+    // console is not guaranteed to exist on the worklet runtime.
+  }
+}
 } // namespace
 
 void SetUIWorkletRuntime(
@@ -59,31 +72,47 @@ std::optional<TransformResult> RunTransformer(
 
   auto transformerFunction =
       transformerValue.asObject(jsiRuntime).asFunction(jsiRuntime);
-  auto resultValue = uiRuntime->runSync(
-      transformerFunction,
-      jsi::String::createFromUtf8(jsiRuntime, value),
-      jsi::Value(selection.start),
-      jsi::Value(selection.end),
-      jsi::Value(transform));
 
-  TransformResult result;
-  auto resultObject = resultValue.asObject(jsiRuntime);
-  auto valueProp = resultObject.getProperty(jsiRuntime, "value");
-  if (valueProp.isString()) {
-    result.value = valueProp.asString(jsiRuntime).utf8(jsiRuntime);
+  try {
+    auto resultValue = uiRuntime->runSync(
+        transformerFunction,
+        jsi::String::createFromUtf8(jsiRuntime, value),
+        jsi::Value(selection.start),
+        jsi::Value(selection.end),
+        jsi::Value(transform));
+
+    // In debug builds runSync guards the call: a throwing transformer is
+    // reported to LogBox and undefined is returned instead of a result
+    // object.
+    if (!resultValue.isObject()) {
+      return std::nullopt;
+    }
+
+    TransformResult result;
+    auto resultObject = resultValue.asObject(jsiRuntime);
+    auto valueProp = resultObject.getProperty(jsiRuntime, "value");
+    if (valueProp.isString()) {
+      result.value = valueProp.asString(jsiRuntime).utf8(jsiRuntime);
+    }
+
+    auto selectionProp = resultObject.getProperty(jsiRuntime, "selection");
+    if (selectionProp.isObject()) {
+      auto selectionObject = selectionProp.asObject(jsiRuntime);
+      auto startProp = selectionObject.getProperty(jsiRuntime, "start");
+      auto endProp = selectionObject.getProperty(jsiRuntime, "end");
+      result.selection = SelectionRange{
+          static_cast<int>(startProp.asNumber()),
+          static_cast<int>(endProp.asNumber())};
+    }
+
+    return result;
+  } catch (const jsi::JSError &error) {
+    LogTransformerError(jsiRuntime, error.getMessage());
+    return std::nullopt;
+  } catch (const jsi::JSIException &error) {
+    LogTransformerError(jsiRuntime, error.what());
+    return std::nullopt;
   }
-
-  auto selectionProp = resultObject.getProperty(jsiRuntime, "selection");
-  if (selectionProp.isObject()) {
-    auto selectionObject = selectionProp.asObject(jsiRuntime);
-    auto startProp = selectionObject.getProperty(jsiRuntime, "start");
-    auto endProp = selectionObject.getProperty(jsiRuntime, "end");
-    result.selection = SelectionRange{
-        static_cast<int>(startProp.asNumber()),
-        static_cast<int>(endProp.asNumber())};
-  }
-
-  return result;
 }
 
 } // namespace rntti
